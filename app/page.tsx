@@ -25,16 +25,18 @@ export default function Home() {
         </p>
 
         {/* Waitlist Form */}
-        <div id="waitlist" className="mt-10 flex flex-col sm:flex-row gap-3 w-full max-w-md">
-          <input
-            type="email"
-            placeholder="Enter your email"
-            className="flex-1 px-5 py-3 rounded-full bg-white/10 border border-white/20 text-white placeholder-gray-500 focus:outline-none focus:border-white"
-          />
-          <button className="bg-white text-black px-6 py-3 rounded-full font-semibold hover:bg-gray-200 transition">
-            Get Early Access
-          </button>
-        </div>
+        <form action="https://formspree.io/f/xlgybygn" method="POST" className="mt-10 flex flex-col sm:flex-row gap-3 w-full max-w-md">
+  <input
+    type="email"
+    name="email"
+    placeholder="Enter your email"
+    required
+    className="flex-1 px-5 py-3 rounded-full bg-white/10 border border-white/20 text-white placeholder-gray-500 focus:outline-none focus:border-white"
+  />
+  <button type="submit" className="bg-white text-black px-6 py-3 rounded-full font-semibold hover:bg-gray-200 transition">
+    Get Early Access
+  </button>
+</form>
         <p className="mt-3 text-xs text-gray-600">Free during beta. No credit card required.</p>
       </section>
 
