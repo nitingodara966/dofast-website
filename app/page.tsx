@@ -7,19 +7,21 @@ export default function Home() {
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await emailjs.send(
-        "service_zs18s7l",
-        "template_p17xj8k",
-        { email: email },
-        "2QqtawoyuzchL56NT"
-      );
-      setSubmitted(true);
-    } catch (error) {
-      alert("Something went wrong. Please try again.");
-    }
-  };
+  e.preventDefault();
+  try {
+    const result = await emailjs.send(
+      "service_zs18s7l",
+      "template_p17xj8k",
+      { email: email },
+      "2QqtawoyuzchL56NT"
+    );
+    console.log("Success:", result);
+    setSubmitted(true);
+  } catch (error) {
+    console.log("Error:", error);
+    alert("Error: " + JSON.stringify(error));
+  }
+};
 
   return (
     <main className="min-h-screen bg-black text-white">
