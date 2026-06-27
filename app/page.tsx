@@ -1,7 +1,28 @@
+"use client";
+import { useState } from "react";
+import emailjs from "@emailjs/browser";
+
 export default function Home() {
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await emailjs.send(
+        "service_zs18s7l",
+        "template_p17xj8k",
+        { email: email },
+        "2QqtawoyuzchL56NT"
+      );
+      setSubmitted(true);
+    } catch (error) {
+      alert("Something went wrong. Please try again.");
+    }
+  };
+
   return (
     <main className="min-h-screen bg-black text-white">
-      {/* Navbar */}
       <nav className="flex items-center justify-between px-8 py-6 max-w-6xl mx-auto">
         <span className="text-2xl font-bold text-white">DoFast</span>
         <a href="#waitlist" className="bg-white text-black px-5 py-2 rounded-full text-sm font-semibold hover:bg-gray-200 transition">
@@ -9,7 +30,6 @@ export default function Home() {
         </a>
       </nav>
 
-      {/* Hero */}
       <section className="flex flex-col items-center text-center px-6 pt-24 pb-20">
         <div className="bg-white/10 text-white text-xs px-4 py-1.5 rounded-full mb-6 border border-white/20">
           🚀 Coming Soon — Join the waitlist
@@ -24,23 +44,32 @@ export default function Home() {
           Connect your GitHub, Vercel, or WordPress site. Then just chat — DoFast handles the rest. No code needed.
         </p>
 
-        {/* Waitlist Form */}
-        <form action="https://formspree.io/f/xlgybygn" method="POST" className="mt-10 flex flex-col sm:flex-row gap-3 w-full max-w-md">
-  <input
-    type="email"
-    name="email"
-    placeholder="Enter your email"
-    required
-    className="flex-1 px-5 py-3 rounded-full bg-white/10 border border-white/20 text-white placeholder-gray-500 focus:outline-none focus:border-white"
-  />
-  <button type="submit" className="bg-white text-black px-6 py-3 rounded-full font-semibold hover:bg-gray-200 transition">
-    Get Early Access
-  </button>
-</form>
+        <div id="waitlist" className="mt-10 w-full max-w-md">
+          {submitted ? (
+            <div className="bg-white/10 border border-white/20 rounded-2xl p-6 text-center">
+              <div className="text-4xl mb-3">🎉</div>
+              <h3 className="text-xl font-bold mb-2">You're on the list!</h3>
+              <p className="text-gray-400 text-sm">Check your email for a welcome message from DoFast.</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="flex-1 px-5 py-3 rounded-full bg-white/10 border border-white/20 text-white placeholder-gray-500 focus:outline-none focus:border-white"
+              />
+              <button type="submit" className="bg-white text-black px-6 py-3 rounded-full font-semibold hover:bg-gray-200 transition">
+                Get Early Access
+              </button>
+            </form>
+          )}
+        </div>
         <p className="mt-3 text-xs text-gray-600">Free during beta. No credit card required.</p>
       </section>
 
-      {/* How it works */}
       <section className="max-w-5xl mx-auto px-6 py-20">
         <h2 className="text-3xl font-bold text-center mb-14">How it works</h2>
         <div className="grid md:grid-cols-3 gap-8">
@@ -58,7 +87,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features */}
       <section className="max-w-5xl mx-auto px-6 py-10 pb-24">
         <h2 className="text-3xl font-bold text-center mb-14">Why DoFast?</h2>
         <div className="grid md:grid-cols-2 gap-6">
@@ -79,7 +107,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA */}
       <section className="text-center px-6 py-20 border-t border-white/10">
         <h2 className="text-4xl font-bold mb-4">Ready to move fast?</h2>
         <p className="text-gray-400 mb-8">Join hundreds of businesses updating their sites with AI.</p>
@@ -88,7 +115,6 @@ export default function Home() {
         </a>
       </section>
 
-      {/* Footer */}
       <footer className="text-center py-8 text-gray-600 text-sm border-t border-white/10">
         © 2025 DoFast. All rights reserved.
       </footer>
