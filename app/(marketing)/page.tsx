@@ -1,27 +1,28 @@
 "use client";
 import { useState } from "react";
-import emailjs from "@emailjs/browser";
 
 export default function Home() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  try {
-    const result = await emailjs.send(
-      "service_zs18s7l",
-      "template_p17xj8k",
-      { email: email },
-      "2QqtawoyuzchL56NT"
-    );
-    console.log("Success:", result);
-    setSubmitted(true);
-  } catch (error) {
-    console.log("Error:", error);
-    alert("Error: " + JSON.stringify(error));
-  }
-};
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        alert(data?.error ?? "Something went wrong. Please try again.");
+        return;
+      }
+      setSubmitted(true);
+    } catch {
+      alert("Something went wrong. Please try again.");
+    }
+  };
 
   return (
     <main className="min-h-screen bg-black text-white">
@@ -50,7 +51,7 @@ export default function Home() {
           {submitted ? (
             <div className="bg-white/10 border border-white/20 rounded-2xl p-6 text-center">
               <div className="text-4xl mb-3">🎉</div>
-              <h3 className="text-xl font-bold mb-2">You're on the list!</h3>
+              <h3 className="text-xl font-bold mb-2">You&apos;re on the list!</h3>
               <p className="text-gray-400 text-sm">Check your email for a welcome message from DoFast.</p>
             </div>
           ) : (
