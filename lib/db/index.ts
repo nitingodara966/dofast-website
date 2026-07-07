@@ -21,6 +21,16 @@ export function getDb(): Db {
     throw new Error("DATABASE_URL is not set");
   }
 
+  try {
+    const parsedUrl = new URL(url);
+    console.log("DB DEBUG:", {
+      host: parsedUrl.hostname,
+      user: parsedUrl.username,
+      database: parsedUrl.pathname,
+    });
+  } catch {
+    console.log("DB DEBUG: unable to parse DATABASE_URL");
+  }
   // prepare: false is required for Supabase's transaction-mode pooler.
   const client = postgres(url, { prepare: false });
   globalForDb.dofastDb = drizzle(client, { schema });
