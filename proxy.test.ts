@@ -22,6 +22,17 @@ describe("proxy (optimistic auth redirects)", () => {
     expect(res.headers.get("location")).toBe("http://localhost:3000/login");
   });
 
+  it("redirects unauthenticated users away from /onboarding to /login", () => {
+    const res = proxy(requestFor("/onboarding"));
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toBe("http://localhost:3000/login");
+  });
+
+  it("lets users with a session cookie through to /onboarding", () => {
+    const res = proxy(requestFor("/onboarding", true));
+    expect(res.headers.get("location")).toBeNull();
+  });
+
   it("lets users with a session cookie through to /dashboard", () => {
     const res = proxy(requestFor("/dashboard", true));
     expect(res.headers.get("location")).toBeNull();

@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import { requireOnboardedUser } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Dashboard — DoFast" };
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  await requireOnboardedUser();
+
   return (
     <div>
       <h1 className="text-3xl font-bold mb-2">Dashboard</h1>

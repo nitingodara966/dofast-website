@@ -10,7 +10,8 @@ export function proxy(request: NextRequest) {
   const sessionCookie = getSessionCookie(request);
   const { pathname } = request.nextUrl;
 
-  const isProtected = pathname.startsWith("/dashboard");
+  const isProtected =
+    pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding");
   const isAuthPage = pathname === "/login" || pathname === "/signup";
 
   if (isProtected && !sessionCookie) {
@@ -23,5 +24,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/signup"],
+  matcher: ["/dashboard/:path*", "/onboarding/:path*", "/login", "/signup"],
 };

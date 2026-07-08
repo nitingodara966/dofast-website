@@ -7,6 +7,7 @@ export type SessionUser = {
   id: string;
   email: string;
   name: string;
+  onboardingCompletedAt: Date | null;
 };
 
 export async function getUser(): Promise<SessionUser | null> {
@@ -15,7 +16,10 @@ export async function getUser(): Promise<SessionUser | null> {
   });
   if (!session) return null;
   const { id, email, name } = session.user;
-  return { id, email, name };
+  const { onboardingCompletedAt } = session.user as {
+    onboardingCompletedAt?: Date | null;
+  };
+  return { id, email, name, onboardingCompletedAt: onboardingCompletedAt ?? null };
 }
 
 /**
@@ -25,5 +29,15 @@ export async function getUser(): Promise<SessionUser | null> {
 export async function requireUser(): Promise<SessionUser> {
   const user = await getUser();
   if (!user) redirect("/login");
+  return user;
+}
+
+/**
+ * For pages that also require completed onboarding (dashboard and everything
+ * that will grow around it).
+ */
+export async function requireOnboardedUser(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (!user.onboardingCompletedAt) redirect("/onboarding");
   return user;
 }

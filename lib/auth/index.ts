@@ -12,6 +12,17 @@ function createAuth() {
     emailAndPassword: {
       enabled: true,
     },
+    user: {
+      additionalFields: {
+        // input: false — clients can never set this via the auth API;
+        // it is only written server-side by the onboarding server action.
+        onboardingCompletedAt: {
+          type: "date",
+          required: false,
+          input: false,
+        },
+      },
+    },
   });
 }
 
