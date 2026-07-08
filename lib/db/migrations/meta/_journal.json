@@ -8,6 +8,13 @@
       "when": 1783414386343,
       "tag": "0000_init_waitlist_and_audit_log",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783488864474,
+      "tag": "0001_better_auth_tables",
+      "breakpoints": true
     }
   ]
 }
