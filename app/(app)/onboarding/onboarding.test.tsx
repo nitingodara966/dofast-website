@@ -52,7 +52,7 @@ describe("onboarding page", () => {
     expect(screen.getByText(/Welcome to DoFast, Nitin/)).toBeTruthy();
     expect(screen.getByText(/connect your website and update it by chatting with AI/i)).toBeTruthy();
     expect(screen.getByText("Connect your website")).toBeTruthy();
-    expect(screen.getByText("GitHub — coming soon")).toBeTruthy();
+    expect(screen.getByText("GitHub — first integration")).toBeTruthy();
     expect(screen.getByText("Preview, then publish")).toBeTruthy();
     expect(
       screen.getByText("Got it — take me to my dashboard")

@@ -9,8 +9,8 @@ const steps = [
   {
     step: "1",
     title: "Connect your website",
-    desc: "Link the GitHub repository that powers your site. GitHub is our first supported integration — connection arrives in the next update.",
-    badge: "GitHub — coming soon",
+    desc: "Link the GitHub repository that powers your site. GitHub is our first supported integration — connect it from your dashboard.",
+    badge: "GitHub — first integration",
   },
   {
     step: "2",
