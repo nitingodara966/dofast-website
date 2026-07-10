@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { requireOnboardedUser } from "@/lib/auth/session";
 import { listInstallationsForUser } from "@/lib/db/installations";
+import { listSitesForUser } from "@/lib/db/sites";
 
 export const metadata: Metadata = { title: "Dashboard — DoFast" };
 
@@ -9,6 +11,15 @@ const errorMessages: Record<string, string> = {
     "We couldn't complete the GitHub connection. Please try again.",
   installation_unavailable:
     "That GitHub installation is already connected to another DoFast account.",
+};
+
+const noticeMessages: Record<string, string> = {
+  already_connected: "That repository is already connected.",
+};
+
+const frameworkLabels: Record<string, string> = {
+  nextjs: "Next.js",
+  react: "React",
 };
 
 export default async function DashboardPage({
@@ -20,10 +31,14 @@ export default async function DashboardPage({
   const installations = await listInstallationsForUser(user.id);
   const active = installations.find((i) => !i.revokedAt) ?? null;
   const wasDisconnected = !active && installations.length > 0;
+  const allSites = await listSitesForUser(user.id);
+  const activeSites = allSites.filter((s) => s.status === "active");
 
   const params = (await searchParams) ?? {};
   const errorKey = typeof params.error === "string" ? params.error : null;
   const errorMessage = errorKey ? (errorMessages[errorKey] ?? null) : null;
+  const noticeKey = typeof params.notice === "string" ? params.notice : null;
+  const noticeMessage = noticeKey ? (noticeMessages[noticeKey] ?? null) : null;
 
   return (
     <div>
@@ -41,8 +56,14 @@ export default async function DashboardPage({
         </div>
       )}
 
+      {noticeMessage && (
+        <div className="bg-white/5 border border-white/20 text-gray-300 text-sm rounded-2xl px-6 py-4 mb-6">
+          {noticeMessage}
+        </div>
+      )}
+
       {active && !active.suspendedAt && (
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-8 mb-6">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
               <h2 className="text-xl font-semibold mb-1">GitHub connected</h2>
@@ -59,10 +80,46 @@ export default async function DashboardPage({
               Connected
             </span>
           </div>
-          <p className="text-gray-400 text-sm mt-6">
-            Next step: choose the repository that powers your website.
-            Repository selection is coming in the next update.
-          </p>
+
+          {activeSites.length === 0 ? (
+            <div className="mt-6 flex items-center justify-between gap-4 flex-wrap">
+              <p className="text-gray-400 text-sm">
+                Next step: choose the repository that powers your website.
+              </p>
+              <Link
+                href="/repositories"
+                className="bg-white text-black px-5 py-2 rounded-full text-sm font-semibold hover:bg-gray-200 transition whitespace-nowrap"
+              >
+                Choose repository
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-6 flex flex-col gap-3">
+              {activeSites.map((site) => (
+                <div
+                  key={site.id}
+                  className="flex items-center justify-between gap-4 bg-white/5 border border-white/10 rounded-2xl px-6 py-4"
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate">{site.repoFullName}</p>
+                    <p className="text-gray-500 text-xs mt-1">
+                      {frameworkLabels[site.framework] ?? site.framework} ·
+                      branch: {site.defaultBranch}
+                    </p>
+                  </div>
+                  <span className="text-gray-500 text-xs whitespace-nowrap">
+                    Chat with your website — coming next
+                  </span>
+                </div>
+              ))}
+              <Link
+                href="/repositories"
+                className="text-gray-400 text-sm hover:text-white transition self-start mt-1"
+              >
+                + Connect another repository
+              </Link>
+            </div>
+          )}
         </div>
       )}
 

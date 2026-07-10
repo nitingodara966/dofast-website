@@ -14,6 +14,14 @@ vi.mock("@/lib/db/installations", () => ({
     updateSelectionMock(id, s),
 }));
 
+const disconnectReposMock = vi.fn();
+const disconnectInstallationMock = vi.fn();
+vi.mock("@/lib/db/sites", () => ({
+  disconnectSitesForRepos: (id: number, repoIds: number[]) =>
+    disconnectReposMock(id, repoIds),
+  disconnectSitesForInstallation: (id: number) => disconnectInstallationMock(id),
+}));
+
 const auditMock = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/db/audit", () => ({
   writeAudit: (entry: unknown) => auditMock(entry),
@@ -60,6 +68,8 @@ beforeEach(() => {
   setSuspendedMock.mockReset().mockResolvedValue(true);
   updatePermissionsMock.mockReset().mockResolvedValue(true);
   updateSelectionMock.mockReset().mockResolvedValue(true);
+  disconnectReposMock.mockReset().mockResolvedValue(0);
+  disconnectInstallationMock.mockReset().mockResolvedValue(0);
   auditMock.mockClear();
 
   consoleCalls.length = 0;
@@ -114,12 +124,14 @@ describe("POST /api/webhooks/github", () => {
     expect(consoleCalls.some((c) => c.includes('"disposition":"acknowledged"'))).toBe(true);
   });
 
-  it("installation.deleted revokes the row", async () => {
+  it("installation.deleted revokes the row and disconnects its sites", async () => {
+    disconnectInstallationMock.mockResolvedValue(2);
     const res = await POST(
       webhookRequest("installation", { action: "deleted", installation: { id: 42 } })
     );
     expect(res.status).toBe(200);
     expect(markRevokedMock).toHaveBeenCalledWith(42);
+    expect(disconnectInstallationMock).toHaveBeenCalledWith(42);
     expect(consoleCalls.some((c) => c.includes('"disposition":"handled"'))).toBe(true);
   });
 
@@ -155,6 +167,7 @@ describe("POST /api/webhooks/github", () => {
       })
     );
     expect(updateSelectionMock).toHaveBeenCalledWith(42, "selected");
+    expect(disconnectReposMock).not.toHaveBeenCalled();
 
     await POST(
       webhookRequest("installation_repositories", {
@@ -163,6 +176,27 @@ describe("POST /api/webhooks/github", () => {
       })
     );
     expect(updateSelectionMock).toHaveBeenLastCalledWith(42, "all");
+  });
+
+  it("repositories_removed disconnects matching sites", async () => {
+    disconnectReposMock.mockResolvedValue(1);
+    await POST(
+      webhookRequest("installation_repositories", {
+        action: "removed",
+        installation: { id: 42, repository_selection: "selected" },
+        repositories_removed: [
+          { id: 7, full_name: "owner/site" },
+          { id: 8, full_name: "owner/other" },
+        ],
+      })
+    );
+    expect(disconnectReposMock).toHaveBeenCalledWith(42, [7, 8]);
+    expect(auditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "github.webhook.repositories_removed",
+        detail: expect.objectContaining({ sitesDisconnected: 1 }),
+      })
+    );
   });
 
   it("unknown installations return 200 with a warn-level log", async () => {

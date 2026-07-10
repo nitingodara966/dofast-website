@@ -11,7 +11,9 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isProtected =
-    pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding");
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/onboarding") ||
+    pathname.startsWith("/repositories");
   const isAuthPage = pathname === "/login" || pathname === "/signup";
 
   if (isProtected && !sessionCookie) {
@@ -24,5 +26,11 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/onboarding/:path*", "/login", "/signup"],
+  matcher: [
+    "/dashboard/:path*",
+    "/onboarding/:path*",
+    "/repositories/:path*",
+    "/login",
+    "/signup",
+  ],
 };

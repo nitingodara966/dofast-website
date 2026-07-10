@@ -7,6 +7,10 @@ import {
   updateInstallationPermissions,
   updateInstallationRepositorySelection,
 } from "@/lib/db/installations";
+import {
+  disconnectSitesForInstallation,
+  disconnectSitesForRepos,
+} from "@/lib/db/sites";
 import { writeAudit } from "@/lib/db/audit";
 
 const installationPayloadSchema = z
@@ -19,6 +23,9 @@ const installationPayloadSchema = z
         permissions: z.record(z.string(), z.string()).optional(),
       })
       .loose(),
+    repositories_removed: z
+      .array(z.object({ id: z.number().int().positive() }).loose())
+      .optional(),
   })
   .loose();
 
@@ -93,7 +100,8 @@ export async function POST(request: Request) {
       disposition = await handleInstallationRepositories(
         action,
         installationId,
-        parsed.data.installation.repository_selection ?? null
+        parsed.data.installation.repository_selection ?? null,
+        parsed.data.repositories_removed?.map((r) => r.id) ?? []
       );
     }
   }
@@ -118,9 +126,10 @@ async function handleInstallation(
       return "acknowledged";
     case "deleted": {
       const found = await markInstallationRevoked(installationId);
+      const sitesDisconnected = await disconnectSitesForInstallation(installationId);
       await writeAudit({
         action: "github.webhook.installation_deleted",
-        detail: { installationId, found },
+        detail: { installationId, found, sitesDisconnected },
       });
       return found ? "handled" : "unknown-installation";
     }
@@ -155,17 +164,21 @@ async function handleInstallation(
 async function handleInstallationRepositories(
   action: string,
   installationId: number,
-  repositorySelection: string | null
+  repositorySelection: string | null,
+  removedRepoIds: number[]
 ): Promise<Disposition> {
   if (action !== "added" && action !== "removed") return "ignored-event";
-  // M4 scope: keep the selection mode in sync; per-repo tracking arrives with
-  // repository selection in the next milestone.
   const found = repositorySelection
     ? await updateInstallationRepositorySelection(installationId, repositorySelection)
     : false;
+  // Losing repo access invalidates any site built on those repos.
+  const sitesDisconnected =
+    action === "removed"
+      ? await disconnectSitesForRepos(installationId, removedRepoIds)
+      : 0;
   await writeAudit({
     action: `github.webhook.repositories_${action}`,
-    detail: { installationId, found, repositorySelection },
+    detail: { installationId, found, repositorySelection, removedRepoIds, sitesDisconnected },
   });
   return found ? "handled" : "unknown-installation";
 }

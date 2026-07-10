@@ -16,6 +16,11 @@ vi.mock("@/lib/db/installations", () => ({
   listInstallationsForUser: (userId: string) => listInstallationsMock(userId),
 }));
 
+const listSitesMock = vi.fn();
+vi.mock("@/lib/db/sites", () => ({
+  listSitesForUser: (userId: string) => listSitesMock(userId),
+}));
+
 import AppLayout from "../layout";
 import DashboardPage from "./page";
 
@@ -52,6 +57,7 @@ describe("protected dashboard", () => {
     requireUserMock.mockReset().mockResolvedValue(onboardedUser);
     requireOnboardedUserMock.mockReset().mockResolvedValue(onboardedUser);
     listInstallationsMock.mockReset().mockResolvedValue([]);
+    listSitesMock.mockReset().mockResolvedValue([]);
   });
 
   afterEach(() => cleanup());
@@ -83,13 +89,39 @@ describe("protected dashboard", () => {
     expect(listInstallationsMock).toHaveBeenCalledWith("user-1");
   });
 
-  it("shows connected state with the GitHub account identity", async () => {
+  it("shows connected state with the GitHub account identity and repo CTA", async () => {
     listInstallationsMock.mockResolvedValue([installation()]);
     render(await renderDashboard());
     expect(screen.getByText("GitHub connected")).toBeTruthy();
     expect(screen.getByText("nitin")).toBeTruthy();
     expect(screen.getByText("Connected")).toBeTruthy();
     expect(screen.queryByText("Connect GitHub")).toBeNull();
+    const choose = screen.getByText("Choose repository") as HTMLAnchorElement;
+    expect(choose.getAttribute("href")).toBe("/repositories");
+  });
+
+  it("lists connected sites instead of the repo CTA", async () => {
+    listInstallationsMock.mockResolvedValue([installation()]);
+    listSitesMock.mockResolvedValue([
+      {
+        id: "site-1",
+        userId: "user-1",
+        installationId: 42,
+        repoId: 7,
+        repoFullName: "owner/site",
+        defaultBranch: "main",
+        framework: "nextjs",
+        status: "active",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        disconnectedAt: null,
+      },
+    ]);
+    render(await renderDashboard());
+    expect(screen.getByText("owner/site")).toBeTruthy();
+    expect(screen.getByText(/Next\.js · branch: main/)).toBeTruthy();
+    expect(screen.queryByText("Choose repository")).toBeNull();
+    expect(screen.getByText("+ Connect another repository")).toBeTruthy();
   });
 
   it("shows suspended state", async () => {

@@ -5,6 +5,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
@@ -58,3 +59,36 @@ export const auditLog = pgTable("audit_log", {
   detail: jsonb("detail"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const sites = pgTable(
+  "sites",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    installationId: bigint("installation_id", { mode: "number" })
+      .notNull()
+      .references(() => githubInstallations.installationId, {
+        onDelete: "cascade",
+      }),
+    // GitHub's numeric repo id — stable across renames; uniqueness per user.
+    repoId: bigint("repo_id", { mode: "number" }).notNull(),
+    repoFullName: text("repo_full_name").notNull(),
+    defaultBranch: text("default_branch").notNull(),
+    framework: text("framework").notNull(), // "nextjs" | "react"
+    status: text("status").notNull().default("active"), // "active" | "disconnected"
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    disconnectedAt: timestamp("disconnected_at", { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("sites_user_repo_unique").on(t.userId, t.repoId),
+    index("sites_user_id_idx").on(t.userId),
+    index("sites_installation_id_idx").on(t.installationId),
+  ]
+);
