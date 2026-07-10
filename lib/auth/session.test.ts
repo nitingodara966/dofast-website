@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getSessionMock = vi.fn();
+const getAuthMock = vi.fn(() => ({ api: { getSession: getSessionMock } }));
 vi.mock("./index", () => ({
-  getAuth: () => ({ api: { getSession: getSessionMock } }),
+  getAuth: () => getAuthMock(),
 }));
 
 const redirectMock = vi.fn((url: string) => {
@@ -12,8 +13,9 @@ vi.mock("next/navigation", () => ({
   redirect: (url: string) => redirectMock(url),
 }));
 
+const headersMock = vi.fn(async () => new Headers());
 vi.mock("next/headers", () => ({
-  headers: async () => new Headers(),
+  headers: () => headersMock(),
 }));
 
 import { getUser, requireUser, requireOnboardedUser } from "./session";
@@ -35,6 +37,8 @@ function sessionFor(onboardingCompletedAt: Date | null) {
 beforeEach(() => {
   getSessionMock.mockReset();
   redirectMock.mockClear();
+  getAuthMock.mockClear();
+  headersMock.mockClear();
 });
 
 describe("getUser", () => {
@@ -60,6 +64,15 @@ describe("getUser", () => {
   it("returns null without a session", async () => {
     getSessionMock.mockResolvedValue(null);
     await expect(getUser()).resolves.toBeNull();
+  });
+
+  it("awaits headers() before initializing auth — build-time prerender bailout must never reach the database", async () => {
+    // Simulates Next.js's prerender bailout: headers() rejects during static
+    // generation. getAuth() (which eagerly creates the DB client) must not
+    // have been called, or env-less `next build` (like CI) crashes.
+    headersMock.mockRejectedValueOnce(new Error("PRERENDER_BAILOUT"));
+    await expect(getUser()).rejects.toThrow("PRERENDER_BAILOUT");
+    expect(getAuthMock).not.toHaveBeenCalled();
   });
 });
 

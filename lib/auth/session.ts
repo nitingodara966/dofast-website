@@ -11,8 +11,14 @@ export type SessionUser = {
 };
 
 export async function getUser(): Promise<SessionUser | null> {
+  // headers() must be awaited BEFORE getAuth(): during build-time
+  // prerendering it bails the route out to dynamic rendering, so auth (and
+  // its database client) is never initialized in environments without env
+  // vars — e.g. the env-less CI build. getAuth() first would call getDb()
+  // eagerly and crash `next build` wherever DATABASE_URL is absent.
+  const requestHeaders = await headers();
   const session = await getAuth().api.getSession({
-    headers: await headers(),
+    headers: requestHeaders,
   });
   if (!session) return null;
   const { id, email, name } = session.user;
