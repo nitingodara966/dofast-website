@@ -2,6 +2,7 @@ import "server-only";
 import { createSign } from "node:crypto";
 import { z } from "zod";
 import { getGitHubAppConfig, type GitHubAppConfig } from "./config";
+import { githubFetch } from "./fetch";
 
 const GITHUB_API = "https://api.github.com";
 
@@ -64,7 +65,7 @@ export type GitHubInstallationInfo = {
 export async function getInstallation(
   installationId: number
 ): Promise<GitHubInstallationInfo | null> {
-  const res = await fetch(`${GITHUB_API}/app/installations/${installationId}`, {
+  const res = await githubFetch(`${GITHUB_API}/app/installations/${installationId}`, {
     headers: githubAppHeaders(),
   });
   if (res.status === 404) return null;

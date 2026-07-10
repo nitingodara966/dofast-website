@@ -3,8 +3,9 @@
 import { redirect } from "next/navigation";
 import { requireOnboardedUser } from "@/lib/auth/session";
 import { listInstallationsForUser } from "@/lib/db/installations";
-import { createSite } from "@/lib/db/sites";
+import { createSite, listSitesForUser } from "@/lib/db/sites";
 import { writeAudit } from "@/lib/db/audit";
+import { refreshSnapshot } from "@/lib/repo/snapshot";
 import { mintInstallationToken } from "@/lib/github/tokens";
 import { getInstallationRepository, fetchRepoPackageJson } from "@/lib/github/repos";
 import { detectFramework } from "@/lib/github/detect";
@@ -71,6 +72,13 @@ export async function selectRepository(formData: FormData) {
     userId: user.id,
     detail: { repoId, repoFullName: repo.fullName, framework, result },
   });
+
+  // Best-effort initial index — refreshSnapshot never throws, and a snapshot
+  // failure must never break the connect flow.
+  const site = (await listSitesForUser(user.id)).find((s) => s.repoId === repoId);
+  if (site) {
+    await refreshSnapshot(site, active, { force: true });
+  }
 
   redirect(
     result === "created" ? "/dashboard" : "/dashboard?notice=already_connected"

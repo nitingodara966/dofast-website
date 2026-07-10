@@ -33,6 +33,11 @@ vi.mock("@/lib/github/tokens", () => ({
   mintInstallationToken: (row: unknown) => mintTokenMock(row),
 }));
 
+const refreshSnapshotMock = vi.fn();
+vi.mock("@/lib/repo/snapshot", () => ({
+  refreshSnapshot: (...a: unknown[]) => refreshSnapshotMock(...a),
+}));
+
 const listReposMock = vi.fn();
 const getRepoMock = vi.fn();
 const fetchPkgMock = vi.fn();
@@ -91,6 +96,7 @@ beforeEach(() => {
   fetchPkgMock
     .mockReset()
     .mockResolvedValue(JSON.stringify({ dependencies: { next: "16.0.0" } }));
+  refreshSnapshotMock.mockReset().mockResolvedValue(null);
   auditMock.mockClear();
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
@@ -135,10 +141,14 @@ describe("repositories page", () => {
 
 describe("selectRepository action", () => {
   it("validates access via the installation token and creates a user-scoped site", async () => {
+    listSitesMock.mockResolvedValue([
+      { id: "site-1", repoId: 7, status: "active", repoFullName: "owner/site", defaultBranch: "main" },
+    ]);
     await expect(selectRepository(selectForm("7"))).rejects.toThrow(
       "REDIRECT:/dashboard"
     );
     expect(getRepoMock).toHaveBeenCalledWith("ghs_token", 7);
+    expect(refreshSnapshotMock).toHaveBeenCalled(); // best-effort initial index
     expect(createSiteMock).toHaveBeenCalledWith({
       userId: "user-1",
       installationId: 42,

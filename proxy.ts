@@ -13,7 +13,8 @@ export function proxy(request: NextRequest) {
   const isProtected =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/onboarding") ||
-    pathname.startsWith("/repositories");
+    pathname.startsWith("/repositories") ||
+    pathname.startsWith("/sites");
   const isAuthPage = pathname === "/login" || pathname === "/signup";
 
   if (isProtected && !sessionCookie) {
@@ -30,6 +31,7 @@ export const config = {
     "/dashboard/:path*",
     "/onboarding/:path*",
     "/repositories/:path*",
+    "/sites/:path*",
     "/login",
     "/signup",
   ],

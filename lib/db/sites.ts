@@ -98,3 +98,19 @@ export async function disconnectSitesForInstallation(
     .returning({ id: sites.id });
   return rows.length;
 }
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Ownership-scoped lookup — the only way pages resolve a site by id. */
+export async function getSiteForUser(
+  siteId: string,
+  userId: string
+): Promise<SiteRecord | null> {
+  if (!UUID_RE.test(siteId)) return null;
+  const rows = await getDb()
+    .select()
+    .from(sites)
+    .where(and(eq(sites.id, siteId), eq(sites.userId, userId)));
+  return rows[0] ?? null;
+}

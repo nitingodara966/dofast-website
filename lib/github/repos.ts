@@ -1,11 +1,12 @@
 import "server-only";
 import { z } from "zod";
+import { githubFetch } from "./fetch";
 
 const GITHUB_API = "https://api.github.com";
 const MAX_PAGES = 3; // 300 repos is plenty for MVP listing
 const MAX_PACKAGE_JSON_BYTES = 300_000;
 
-function installationHeaders(token: string): Record<string, string> {
+export function installationHeaders(token: string): Record<string, string> {
   return {
     Authorization: `Bearer ${token}`,
     Accept: "application/vnd.github+json",
@@ -52,7 +53,7 @@ export async function listInstallationRepositories(
 
   const repos: RepoSummary[] = [];
   for (let page = 1; page <= MAX_PAGES; page++) {
-    const res = await fetch(
+    const res = await githubFetch(
       `${GITHUB_API}/installation/repositories?per_page=100&page=${page}`,
       { headers: installationHeaders(token) }
     );
@@ -85,7 +86,7 @@ export async function getInstallationRepository(
   token: string,
   repoId: number
 ): Promise<RepoSummary | null> {
-  const res = await fetch(`${GITHUB_API}/repositories/${repoId}`, {
+  const res = await githubFetch(`${GITHUB_API}/repositories/${repoId}`, {
     headers: installationHeaders(token),
   });
   if (res.status === 404) return null;
@@ -107,7 +108,7 @@ export async function fetchRepoPackageJson(
   repoFullName: string
 ): Promise<string | null> {
   if (!/^[^/\s]+\/[^/\s]+$/.test(repoFullName)) return null;
-  const res = await fetch(
+  const res = await githubFetch(
     `${GITHUB_API}/repos/${repoFullName}/contents/package.json`,
     { headers: installationHeaders(token) }
   );

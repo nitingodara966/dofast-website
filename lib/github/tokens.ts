@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { githubAppHeaders } from "./app";
 import { markInstallationRevoked } from "../db/installations";
+import { githubFetch } from "./fetch";
 
 const tokenResponseSchema = z
   .object({ token: z.string(), expires_at: z.string() })
@@ -31,7 +32,7 @@ export async function mintInstallationToken(
     throw new Error("GitHub installation is suspended");
   }
 
-  const res = await fetch(
+  const res = await githubFetch(
     `https://api.github.com/app/installations/${installation.installationId}/access_tokens`,
     { method: "POST", headers: githubAppHeaders() }
   );

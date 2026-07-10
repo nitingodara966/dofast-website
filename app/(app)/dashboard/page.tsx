@@ -107,9 +107,17 @@ export default async function DashboardPage({
                       branch: {site.defaultBranch}
                     </p>
                   </div>
-                  <span className="text-gray-500 text-xs whitespace-nowrap">
-                    Chat with your website — coming next
-                  </span>
+                  <div className="flex items-center gap-4 whitespace-nowrap">
+                    <Link
+                      href={`/sites/${site.id}`}
+                      className="text-sm text-gray-300 hover:text-white transition"
+                    >
+                      View files
+                    </Link>
+                    <span className="text-gray-500 text-xs">
+                      Chat — coming next
+                    </span>
+                  </div>
                 </div>
               ))}
               <Link

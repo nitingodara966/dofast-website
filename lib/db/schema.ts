@@ -1,6 +1,9 @@
+import { sql } from "drizzle-orm";
 import {
   bigint,
+  check,
   index,
+  integer,
   jsonb,
   pgTable,
   text,
@@ -90,5 +93,49 @@ export const sites = pgTable(
     uniqueIndex("sites_user_repo_unique").on(t.userId, t.repoId),
     index("sites_user_id_idx").on(t.userId),
     index("sites_installation_id_idx").on(t.installationId),
+  ]
+);
+
+export const repoSnapshots = pgTable(
+  "repo_snapshots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    siteId: uuid("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    // Empty string only on the failed placeholder row (no build ever succeeded).
+    commitSha: text("commit_sha").notNull(),
+    ref: text("ref").notNull(),
+    status: text("status").notNull(), // "ready" | "truncated" | "failed"
+    fileCount: integer("file_count").notNull().default(0),
+    skippedCount: integer("skipped_count").notNull().default(0),
+    totalSize: bigint("total_size", { mode: "number" }).notNull().default(0),
+    fileIndex: jsonb("file_index").notNull(),
+    // Transient refresh failures never destroy the last-known-good snapshot;
+    // they are recorded here alongside it.
+    refreshError: text("refresh_error"),
+    refreshFailedAt: timestamp("refresh_failed_at", { withTimezone: true }),
+    // Build start time — used to prevent a slower, older build from
+    // overwriting a newer snapshot (upsert is conditioned on it).
+    indexedAt: timestamp("indexed_at", { withTimezone: true }).notNull(),
+    headCheckedAt: timestamp("head_checked_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("repo_snapshots_site_id_unique").on(t.siteId),
+    check(
+      "repo_snapshots_status_check",
+      sql`${t.status} in ('ready', 'truncated', 'failed')`
+    ),
+    check("repo_snapshots_file_count_check", sql`${t.fileCount} >= 0`),
+    check("repo_snapshots_skipped_count_check", sql`${t.skippedCount} >= 0`),
+    check("repo_snapshots_total_size_check", sql`${t.totalSize} >= 0`),
   ]
 );

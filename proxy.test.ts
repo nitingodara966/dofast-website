@@ -33,6 +33,23 @@ describe("proxy (optimistic auth redirects)", () => {
     expect(res.headers.get("location")).toBeNull();
   });
 
+  it("protects /repositories and /sites exactly like the other protected routes", () => {
+    for (const path of [
+      "/repositories",
+      "/repositories/anything?error=unsupported_repository",
+      "/sites",
+      "/sites/11111111-2222-3333-4444-555555555555",
+      "/sites/11111111-2222-3333-4444-555555555555?path=app%2Fpage.tsx",
+    ]) {
+      const anonymous = proxy(requestFor(path));
+      expect(anonymous.status).toBe(307);
+      expect(anonymous.headers.get("location")).toBe("http://localhost:3000/login");
+
+      const authenticated = proxy(requestFor(path, true));
+      expect(authenticated.headers.get("location")).toBeNull();
+    }
+  });
+
   it("lets users with a session cookie through to /dashboard", () => {
     const res = proxy(requestFor("/dashboard", true));
     expect(res.headers.get("location")).toBeNull();

@@ -128,3 +128,14 @@ export async function updateInstallationRepositorySelection(
     .returning({ id: githubInstallations.id });
   return rows.length > 0;
 }
+
+/** Lookup by GitHub's numeric installation id (unique). */
+export async function getInstallationRecord(
+  installationId: number
+): Promise<InstallationRecord | null> {
+  const rows = await getDb()
+    .select()
+    .from(githubInstallations)
+    .where(eq(githubInstallations.installationId, installationId));
+  return rows[0] ?? null;
+}
