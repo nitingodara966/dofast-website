@@ -43,6 +43,13 @@
       "when": 1783679642819,
       "tag": "0005_repo_snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783730278135,
+      "tag": "0006_chat_threads_and_messages",
+      "breakpoints": true
     }
   ]
 }

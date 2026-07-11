@@ -139,3 +139,52 @@ export const repoSnapshots = pgTable(
     check("repo_snapshots_total_size_check", sql`${t.totalSize} >= 0`),
   ]
 );
+
+export const chatThreads = pgTable(
+  "chat_threads",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    siteId: uuid("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    title: text("title").notNull().default("New chat"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("chat_threads_site_id_idx").on(t.siteId),
+    index("chat_threads_user_id_idx").on(t.userId),
+  ]
+);
+
+export const chatMessages = pgTable(
+  "chat_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    threadId: uuid("thread_id")
+      .notNull()
+      .references(() => chatThreads.id, { onDelete: "cascade" }),
+    role: text("role").notNull(), // "user" | "assistant"
+    content: text("content").notNull(),
+    // Populated by the AI layer in the next milestone.
+    tokenUsage: jsonb("token_usage"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("chat_messages_thread_id_idx").on(t.threadId),
+    check("chat_messages_role_check", sql`${t.role} in ('user', 'assistant')`),
+    check(
+      "chat_messages_content_length_check",
+      sql`char_length(${t.content}) between 1 and 8000`
+    ),
+  ]
+);

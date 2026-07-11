@@ -114,9 +114,12 @@ export default async function DashboardPage({
                     >
                       View files
                     </Link>
-                    <span className="text-gray-500 text-xs">
-                      Chat — coming next
-                    </span>
+                    <Link
+                      href={`/sites/${site.id}/chat`}
+                      className="bg-white text-black px-4 py-1.5 rounded-full text-sm font-semibold hover:bg-gray-200 transition"
+                    >
+                      Open chat
+                    </Link>
                   </div>
                 </div>
               ))}

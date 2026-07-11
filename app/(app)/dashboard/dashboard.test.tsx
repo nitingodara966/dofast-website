@@ -122,6 +122,8 @@ describe("protected dashboard", () => {
     expect(screen.getByText(/Next\.js · branch: main/)).toBeTruthy();
     expect(screen.queryByText("Choose repository")).toBeNull();
     expect(screen.getByText("+ Connect another repository")).toBeTruthy();
+    const chat = screen.getByText("Open chat") as HTMLAnchorElement;
+    expect(chat.getAttribute("href")).toBe("/sites/site-1/chat");
   });
 
   it("shows suspended state", async () => {
