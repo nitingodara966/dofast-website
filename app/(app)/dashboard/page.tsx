@@ -3,6 +3,8 @@ import Link from "next/link";
 import { requireOnboardedUser } from "@/lib/auth/session";
 import { listInstallationsForUser } from "@/lib/db/installations";
 import { listSitesForUser } from "@/lib/db/sites";
+import { Alert, Badge, Card } from "@/components/ui/surfaces";
+import { buttonClasses } from "@/components/ui/button";
 
 export const metadata: Metadata = { title: "Dashboard — DoFast" };
 
@@ -42,54 +44,44 @@ export default async function DashboardPage({
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-      <p className="text-gray-400 mb-10">
+      <h1 className="font-serif text-2xl font-semibold mb-2">Dashboard</h1>
+      <p className="text-ink-secondary mb-10">
         Your connected websites will live here.
       </p>
 
       {errorMessage && (
-        <div
-          role="alert"
-          className="bg-red-500/10 border border-red-500/30 text-red-300 text-sm rounded-2xl px-6 py-4 mb-6"
-        >
+        <Alert tone="danger" className="mb-6">
           {errorMessage}
-        </div>
+        </Alert>
       )}
-
       {noticeMessage && (
-        <div className="bg-white/5 border border-white/20 text-gray-300 text-sm rounded-2xl px-6 py-4 mb-6">
+        <Alert tone="neutral" className="mb-6">
           {noticeMessage}
-        </div>
+        </Alert>
       )}
 
       {active && !active.suspendedAt && (
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-8 mb-6">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
+        <Card className="mb-6 p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h2 className="text-xl font-semibold mb-1">GitHub connected</h2>
-              <p className="text-gray-400 text-sm">
-                Connected as{" "}
-                <span className="text-white">{active.accountLogin}</span> (
-                {active.accountType}) —{" "}
+              <h2 className="text-lg font-semibold mb-1">GitHub connected</h2>
+              <p className="text-sm text-ink-secondary">
+                Connected as <span className="text-ink">{active.accountLogin}</span>{" "}
+                ({active.accountType}) —{" "}
                 {active.repositorySelection === "all"
                   ? "all repositories"
                   : "selected repositories"}
               </p>
             </div>
-            <span className="bg-green-500/15 border border-green-500/30 text-green-300 text-xs px-3 py-1.5 rounded-full">
-              Connected
-            </span>
+            <Badge tone="success">Connected</Badge>
           </div>
 
           {activeSites.length === 0 ? (
-            <div className="mt-6 flex items-center justify-between gap-4 flex-wrap">
-              <p className="text-gray-400 text-sm">
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+              <p className="text-sm text-ink-secondary">
                 Next step: choose the repository that powers your website.
               </p>
-              <Link
-                href="/repositories"
-                className="bg-white text-black px-5 py-2 rounded-full text-sm font-semibold hover:bg-gray-200 transition whitespace-nowrap"
-              >
+              <Link href="/repositories" className={buttonClasses("primary", "sm")}>
                 Choose repository
               </Link>
             </div>
@@ -98,25 +90,25 @@ export default async function DashboardPage({
               {activeSites.map((site) => (
                 <div
                   key={site.id}
-                  className="flex items-center justify-between gap-4 bg-white/5 border border-white/10 rounded-2xl px-6 py-4"
+                  className="flex items-center justify-between gap-4 rounded-card border border-line bg-paper px-5 py-4"
                 >
                   <div className="min-w-0">
-                    <p className="font-semibold truncate">{site.repoFullName}</p>
-                    <p className="text-gray-500 text-xs mt-1">
+                    <p className="truncate font-medium">{site.repoFullName}</p>
+                    <p className="mt-1 text-sm text-ink-tertiary">
                       {frameworkLabels[site.framework] ?? site.framework} ·
                       branch: {site.defaultBranch}
                     </p>
                   </div>
-                  <div className="flex items-center gap-4 whitespace-nowrap">
+                  <div className="flex items-center gap-3 whitespace-nowrap">
                     <Link
                       href={`/sites/${site.id}`}
-                      className="text-sm text-gray-300 hover:text-white transition"
+                      className="text-sm text-ink-secondary transition-colors hover:text-ink"
                     >
                       View files
                     </Link>
                     <Link
                       href={`/sites/${site.id}/chat`}
-                      className="bg-white text-black px-4 py-1.5 rounded-full text-sm font-semibold hover:bg-gray-200 transition"
+                      className={buttonClasses("primary", "sm")}
                     >
                       Open chat
                     </Link>
@@ -125,47 +117,42 @@ export default async function DashboardPage({
               ))}
               <Link
                 href="/repositories"
-                className="text-gray-400 text-sm hover:text-white transition self-start mt-1"
+                className="mt-1 self-start text-sm text-ink-secondary transition-colors hover:text-ink"
               >
                 + Connect another repository
               </Link>
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       {active?.suspendedAt && (
-        <div className="bg-white/5 border border-yellow-500/30 rounded-2xl p-8">
-          <h2 className="text-xl font-semibold mb-1">
+        <Card className="border-warning/25 p-6">
+          <h2 className="text-lg font-semibold mb-1">
             GitHub connection suspended
           </h2>
-          <p className="text-gray-400 text-sm">
+          <p className="text-sm text-ink-secondary">
             The DoFast installation for{" "}
-            <span className="text-white">{active.accountLogin}</span> is
-            suspended on GitHub. Unsuspend it from your GitHub settings to
-            continue.
+            <span className="text-ink">{active.accountLogin}</span> is suspended
+            on GitHub. Unsuspend it from your GitHub settings to continue.
           </p>
-        </div>
+        </Card>
       )}
 
       {!active && (
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-12 text-center">
-          <div className="text-4xl mb-4">🌐</div>
-          <h2 className="text-xl font-semibold mb-2">
+        <Card className="p-12 text-center">
+          <h2 className="font-serif text-xl font-medium mb-2">
             No websites connected yet
           </h2>
-          <p className="text-gray-400 text-sm mb-6 max-w-md mx-auto">
+          <p className="mx-auto mb-6 max-w-md text-sm text-ink-secondary">
             {wasDisconnected
               ? "Your previous GitHub connection was removed. Reconnect to continue updating your site by chatting with AI."
               : "Connect your GitHub account to start updating your website by chatting with AI."}
           </p>
-          <a
-            href="/api/github/install"
-            className="inline-block bg-white text-black px-6 py-3 rounded-full font-semibold hover:bg-gray-200 transition"
-          >
+          <a href="/api/github/install" className={buttonClasses("primary", "md")}>
             Connect GitHub
           </a>
-        </div>
+        </Card>
       )}
     </div>
   );

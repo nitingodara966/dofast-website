@@ -5,6 +5,8 @@ import { listInstallationsForUser } from "@/lib/db/installations";
 import { listSitesForUser } from "@/lib/db/sites";
 import { mintInstallationToken } from "@/lib/github/tokens";
 import { listInstallationRepositories, type RepoSummary } from "@/lib/github/repos";
+import { Alert, Badge } from "@/components/ui/surfaces";
+import { buttonClasses } from "@/components/ui/button";
 import { selectRepository } from "./actions";
 
 export const metadata: Metadata = { title: "Choose repository — DoFast" };
@@ -54,86 +56,72 @@ export default async function RepositoriesPage({
   );
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold mb-2">Choose your repository</h1>
-      <p className="text-gray-400 mb-8">
+    <div className="mx-auto max-w-2xl">
+      <h1 className="font-serif text-2xl font-semibold mb-2">
+        Choose your repository
+      </h1>
+      <p className="text-ink-secondary mb-8">
         Pick the GitHub repository that powers your website. DoFast supports
         Next.js and React sites.
       </p>
 
       {errorMessage && (
-        <div
-          role="alert"
-          className="bg-red-500/10 border border-red-500/30 text-red-300 text-sm rounded-2xl px-6 py-4 mb-6"
-        >
+        <Alert tone="danger" className="mb-6">
           {errorMessage}
-        </div>
+        </Alert>
       )}
 
       {active.suspendedAt && (
-        <p className="text-gray-400">
+        <p className="text-ink-secondary">
           Your GitHub installation is suspended. Unsuspend it from your GitHub
           settings to choose a repository.
         </p>
       )}
 
       {!active.suspendedAt && repos === null && (
-        <p className="text-gray-400">
+        <p className="text-ink-secondary">
           We couldn&apos;t load your repositories from GitHub. Please refresh to
           try again.
         </p>
       )}
 
       {repos !== null && repos.length === 0 && (
-        <p className="text-gray-400">
+        <p className="text-ink-secondary">
           Your installation doesn&apos;t grant access to any repositories yet.
           Grant access from your GitHub installation settings, then refresh.
         </p>
       )}
 
       {repos !== null && repos.length > 0 && (
-        <div className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-3">
           {repos.map((repo) => (
-            <div
+            <li
               key={repo.id}
-              className="flex items-center justify-between gap-4 bg-white/5 border border-white/10 rounded-2xl px-6 py-4"
+              className="flex items-center justify-between gap-4 rounded-card border border-line bg-surface px-5 py-4"
             >
               <div className="min-w-0">
-                <p className="font-semibold truncate">
-                  {repo.fullName}
-                  {repo.private && (
-                    <span className="ml-2 text-xs text-gray-400 border border-white/20 rounded-full px-2 py-0.5">
-                      private
-                    </span>
-                  )}
-                  {repo.archived && (
-                    <span className="ml-2 text-xs text-yellow-300/80 border border-yellow-500/30 rounded-full px-2 py-0.5">
-                      archived
-                    </span>
-                  )}
+                <p className="flex flex-wrap items-center gap-2 font-medium">
+                  <span className="truncate font-mono text-sm">{repo.fullName}</span>
+                  {repo.private && <Badge>private</Badge>}
+                  {repo.archived && <Badge tone="warning">archived</Badge>}
                 </p>
-                <p className="text-gray-500 text-xs mt-1">
+                <p className="mt-1 text-sm text-ink-tertiary">
                   default branch: {repo.defaultBranch}
                 </p>
               </div>
               {connectedRepoIds.has(repo.id) ? (
-                <span className="bg-green-500/15 border border-green-500/30 text-green-300 text-xs px-3 py-1.5 rounded-full whitespace-nowrap">
-                  Connected
-                </span>
+                <Badge tone="success">Connected</Badge>
               ) : (
                 <form action={selectRepository}>
                   <input type="hidden" name="repoId" value={repo.id} />
-                  <button
-                    type="submit"
-                    className="bg-white text-black px-5 py-2 rounded-full text-sm font-semibold hover:bg-gray-200 transition whitespace-nowrap"
-                  >
+                  <button type="submit" className={buttonClasses("primary", "sm")}>
                     Connect
                   </button>
                 </form>
               )}
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );

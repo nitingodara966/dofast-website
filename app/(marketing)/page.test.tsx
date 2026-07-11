@@ -20,21 +20,26 @@ describe("landing page", () => {
   it("renders the hero, sections, and waitlist form", () => {
     render(<Home />);
     expect(screen.getAllByText("DoFast").length).toBeGreaterThan(0);
-    expect(screen.getByText("texting AI")).toBeTruthy();
+    expect(screen.getByText("Your website, updated by asking.")).toBeTruthy();
     expect(screen.getByText("How it works")).toBeTruthy();
-    expect(screen.getByText("Why DoFast?")).toBeTruthy();
-    expect(screen.getByPlaceholderText("Enter your email")).toBeTruthy();
-    expect(screen.getByText("Get Early Access")).toBeTruthy();
+    expect(
+      screen.getByText("Built to be trusted with your live site")
+    ).toBeTruthy();
+    expect(screen.getByLabelText("Email address")).toBeTruthy();
+    expect(screen.getAllByText("Join the waitlist").length).toBeGreaterThan(0);
+    // auth entry point preserved
+    const login = screen.getByText("Log in") as HTMLAnchorElement;
+    expect(login.getAttribute("href")).toBe("/login");
   });
 
   it("submits the waitlist form via /api/waitlist and shows the success state", async () => {
     render(<Home />);
-    fireEvent.change(screen.getByPlaceholderText("Enter your email"), {
+    fireEvent.change(screen.getByLabelText("Email address"), {
       target: { value: "user@example.com" },
     });
-    fireEvent.click(screen.getByText("Get Early Access"));
+    fireEvent.submit(screen.getByLabelText("Email address").closest("form")!);
 
-    expect(await screen.findByText("You're on the list!")).toBeTruthy();
+    expect(await screen.findByText("You're on the list")).toBeTruthy();
 
     const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
     expect(fetchMock).toHaveBeenCalledWith(
@@ -58,14 +63,14 @@ describe("landing page", () => {
     vi.stubGlobal("alert", alertMock);
 
     render(<Home />);
-    fireEvent.change(screen.getByPlaceholderText("Enter your email"), {
+    fireEvent.change(screen.getByLabelText("Email address"), {
       target: { value: "user@example.com" },
     });
-    fireEvent.click(screen.getByText("Get Early Access"));
+    fireEvent.submit(screen.getByLabelText("Email address").closest("form")!);
 
     await vi.waitFor(() => expect(alertMock).toHaveBeenCalled());
     expect(alertMock).toHaveBeenCalledWith("Please enter a valid email address.");
-    expect(screen.queryByText("You're on the list!")).toBeNull();
-    expect(screen.getByPlaceholderText("Enter your email")).toBeTruthy();
+    expect(screen.queryByText("You're on the list")).toBeNull();
+    expect(screen.getByLabelText("Email address")).toBeTruthy();
   });
 });

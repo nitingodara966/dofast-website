@@ -7,6 +7,8 @@ import { getInstallationRecord } from "@/lib/db/installations";
 import { refreshSnapshot } from "@/lib/repo/snapshot";
 import { readSnapshotFile, type FileReadResult } from "@/lib/repo/files";
 import { mintInstallationToken } from "@/lib/github/tokens";
+import { Alert, Badge, Card } from "@/components/ui/surfaces";
+import { buttonClasses } from "@/components/ui/button";
 import { refreshSnapshotAction } from "./actions";
 
 export const metadata: Metadata = { title: "Site files — DoFast" };
@@ -69,31 +71,34 @@ export default async function SitePage({
   const hasIndex = snapshot !== null && snapshot.status !== "failed";
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <Link href="/dashboard" className="text-gray-400 text-sm hover:text-white">
+    <div className="mx-auto max-w-4xl">
+      <Link
+        href="/dashboard"
+        className="text-sm text-ink-secondary transition-colors hover:text-ink"
+      >
         ← Dashboard
       </Link>
-      <h1 className="text-3xl font-bold mt-3 mb-1">{site.repoFullName}</h1>
-      <p className="text-gray-400 mb-8 text-sm">
-        branch: {site.defaultBranch} · read-only file index
+      <h1 className="mt-3 mb-1 font-serif text-2xl font-semibold">
+        {site.repoFullName}
+      </h1>
+      <p className="mb-8 text-sm text-ink-secondary">
+        branch: <span className="font-mono">{site.defaultBranch}</span> ·
+        read-only file index
       </p>
 
       {errorMessage && (
-        <div
-          role="alert"
-          className="bg-red-500/10 border border-red-500/30 text-red-300 text-sm rounded-2xl px-6 py-4 mb-6"
-        >
+        <Alert tone="danger" className="mb-6">
           {errorMessage}
-        </div>
+        </Alert>
       )}
 
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="text-sm text-gray-400">
+      <Card className="mb-6 p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="text-sm text-ink-secondary">
             {hasIndex ? (
               <>
                 Indexed commit{" "}
-                <span className="text-white font-mono">
+                <span className="font-mono text-ink">
                   {snapshot.commitSha.slice(0, 7)}
                 </span>{" "}
                 · {snapshot.fileCount} files · {snapshot.skippedCount} skipped ·{" "}
@@ -105,83 +110,78 @@ export default async function SitePage({
           </div>
           <form action={refreshSnapshotAction}>
             <input type="hidden" name="siteId" value={site.id} />
-            <button
-              type="submit"
-              className="bg-white/10 border border-white/20 text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/20 transition"
-            >
+            <button type="submit" className={buttonClasses("secondary", "sm")}>
               Refresh index
             </button>
           </form>
         </div>
 
         {snapshot?.status === "truncated" && (
-          <p className="text-yellow-300/90 text-sm mt-4">
-            ⚠ Partial index — this repository is too large to index completely,
+          <Alert tone="warning" className="mt-4">
+            Partial index — this repository is too large to index completely,
             so DoFast only sees part of it.
-          </p>
+          </Alert>
         )}
         {snapshot?.refreshError && snapshot.status !== "failed" && (
-          <p className="text-yellow-300/90 text-sm mt-4">
-            ⚠ The latest refresh failed ({snapshot.refreshError}). Showing the
+          <Alert tone="warning" className="mt-4">
+            The latest refresh failed ({snapshot.refreshError}). Showing the
             last successful index.
-          </p>
+          </Alert>
         )}
         {(snapshot === null || snapshot.status === "failed") && (
-          <p className="text-red-300 text-sm mt-4">
+          <Alert tone="danger" className="mt-4">
             {snapshot?.refreshError ?? "Indexing failed."} Use Refresh index to
             try again.
-          </p>
+          </Alert>
         )}
-      </div>
+      </Card>
 
       {fileView && (
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6">
-          <div className="flex items-center justify-between gap-4 mb-4">
-            <h2 className="font-semibold font-mono text-sm truncate">
+        <Card className="mb-6 p-6">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <h2 className="truncate font-mono text-sm font-medium">
               {fileView.path}
             </h2>
             <Link
               href={`/sites/${site.id}`}
-              className="text-gray-400 text-sm hover:text-white whitespace-nowrap"
+              className="whitespace-nowrap text-sm text-ink-secondary transition-colors hover:text-ink"
             >
               Close
             </Link>
           </div>
           {fileView.result.ok ? (
-            <pre className="text-xs text-gray-300 bg-black/40 border border-white/10 rounded-xl p-4 overflow-x-auto max-h-[32rem] overflow-y-auto whitespace-pre-wrap break-words">
+            <pre className="max-h-[32rem] overflow-y-auto overflow-x-auto whitespace-pre-wrap break-words rounded-control border border-line bg-sunken p-4 font-mono text-xs text-ink">
               {fileView.result.text}
             </pre>
           ) : (
-            <p className="text-gray-400 text-sm">
+            <p className="text-sm text-ink-secondary">
               {readFailureMessages[fileView.result.reason]}
             </p>
           )}
-        </div>
+        </Card>
       )}
 
       {hasIndex && (
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-          <h2 className="font-semibold mb-4">Files</h2>
+        <Card className="p-6">
+          <h2 className="mb-4 text-lg font-semibold">Files</h2>
           {snapshot.fileIndex.length === 0 ? (
-            <p className="text-gray-400 text-sm">No indexable files found.</p>
+            <p className="text-sm text-ink-secondary">No indexable files found.</p>
           ) : (
             <ul className="flex flex-col gap-1">
               {snapshot.fileIndex.map((file) => (
-                <li key={file.p} className="flex items-center gap-3 min-w-0">
+                <li key={file.p} className="flex min-w-0 items-center gap-3">
                   <Link
                     href={`/sites/${site.id}?path=${encodeURIComponent(file.p)}`}
-                    className="text-sm text-gray-300 hover:text-white font-mono truncate"
+                    className="truncate font-mono text-sm text-ink-secondary transition-colors hover:text-ink"
                   >
                     {file.p}
                   </Link>
-                  <span className="text-[10px] text-gray-500 border border-white/10 rounded-full px-2 py-0.5 whitespace-nowrap">
-                    {file.r}
-                  </span>
+                  <Badge>{file.r}</Badge>
                 </li>
               ))}
             </ul>
           )}
-        </div>
+        </Card>
       )}
     </div>
   );

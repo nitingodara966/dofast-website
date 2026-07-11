@@ -1,26 +1,70 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * DoFast design tokens — DESIGN_SYSTEM.md §1.
+ * Light theme only (M7.5 ruling); structure is dark-ready but no dark theme
+ * is implemented. Components reference tokens via Tailwind utilities only.
+ */
+@theme {
+  /* Neutrals (warm) */
+  --color-paper: #faf9f7;
+  --color-surface: #ffffff;
+  --color-sunken: #f3f1ed;
+  --color-ink: #1c1917;
+  --color-ink-secondary: #57534e;
+  --color-ink-tertiary: #79716b;
+  --color-line: #e7e4df;
+  --color-line-strong: #d6d2cb;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Accent — "Kiln" */
+  --color-accent: #b04a25;
+  --color-accent-strong: #8f3a20;
+  --color-accent-subtle: #f6e7df;
+  --color-accent-border: #edd2c4;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Semantic */
+  --color-success: #15693b;
+  --color-success-subtle: #e4f3e9;
+  --color-warning: #8a5a00;
+  --color-warning-subtle: #fbf0dc;
+  --color-danger: #b42318;
+  --color-danger-subtle: #fbeae7;
+
+  /* Type */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), ui-serif, Georgia, serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Reading size for Simple-register surfaces (forms, chat, marketing body) */
+  --text-body: 1rem;
+  --text-body--line-height: 1.6;
+
+  /* Radii — exactly two + full for dots (DESIGN_SYSTEM §1.5) */
+  --radius-control: 6px;
+  --radius-card: 10px;
+
+  /* The only shadow (floating layers only) */
+  --shadow-overlay: 0 8px 24px rgb(28 25 23 / 0.1);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+/* Visible keyboard focus everywhere (DESIGN_SYSTEM §1.6) */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

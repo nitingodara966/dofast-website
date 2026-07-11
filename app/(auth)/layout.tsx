@@ -6,8 +6,8 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6 py-12">
-      <Link href="/" className="text-2xl font-bold mb-8">
+    <main className="flex min-h-screen flex-col items-center justify-center px-6 py-12">
+      <Link href="/" className="mb-8 font-serif text-xl font-semibold">
         DoFast
       </Link>
       {children}

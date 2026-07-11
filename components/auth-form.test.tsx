@@ -19,7 +19,7 @@ vi.mock("next/navigation", () => ({
 import { AuthForm } from "./auth-form";
 
 function fill(placeholder: string, value: string) {
-  fireEvent.change(screen.getByPlaceholderText(placeholder), {
+  fireEvent.change(screen.getByLabelText(placeholder), {
     target: { value },
   });
 }
@@ -36,10 +36,10 @@ describe("AuthForm", () => {
 
   it("signup: requires name, email, and 8+ char password fields", () => {
     render(<AuthForm mode="signup" />);
-    expect(screen.getByPlaceholderText("Your name")).toHaveProperty("required", true);
-    expect(screen.getByPlaceholderText("Email address")).toHaveProperty("type", "email");
-    expect(screen.getByPlaceholderText("Email address")).toHaveProperty("required", true);
-    const password = screen.getByPlaceholderText("Password") as HTMLInputElement;
+    expect(screen.getByLabelText("Your name")).toHaveProperty("required", true);
+    expect(screen.getByLabelText("Email address")).toHaveProperty("type", "email");
+    expect(screen.getByLabelText("Email address")).toHaveProperty("required", true);
+    const password = screen.getByLabelText("Password") as HTMLInputElement;
     expect(password.required).toBe(true);
     expect(password.minLength).toBe(8);
     expect(password.type).toBe("password");
@@ -62,7 +62,7 @@ describe("AuthForm", () => {
 
   it("login: submits credentials and navigates to the dashboard", async () => {
     render(<AuthForm mode="login" />);
-    expect(screen.queryByPlaceholderText("Your name")).toBeNull();
+    expect(screen.queryByLabelText("Your name")).toBeNull();
     fill("Email address", "user@example.com");
     fill("Password", "supersecret1");
     fireEvent.click(screen.getByText("Sign in"));

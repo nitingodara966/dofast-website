@@ -1,5 +1,36 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
+
+const steps = [
+  {
+    title: "Connect your site",
+    desc: "Link the GitHub repository behind your website. DoFast reads it so it knows what it can change.",
+  },
+  {
+    title: "Ask for a change",
+    desc: '"Update our phone number." "Change the photo on the About page." Plain English is the whole interface.',
+  },
+  {
+    title: "Preview it, then make it live",
+    desc: "Every change builds a private preview first. Nothing touches your live site until you approve it.",
+  },
+];
+
+const promises = [
+  {
+    title: "You approve every change",
+    desc: "DoFast proposes; you decide. There is no auto-publish, ever.",
+  },
+  {
+    title: "Preview before live",
+    desc: "See exactly how your site will look on a private copy first.",
+  },
+  {
+    title: "Undo anytime",
+    desc: "Every published change is recorded and can be put back the way it was.",
+  },
+];
 
 export default function Home() {
   const [email, setEmail] = useState("");
@@ -24,102 +55,133 @@ export default function Home() {
     }
   };
 
+  const waitlistForm = submitted ? (
+    <div className="rounded-card border border-line bg-surface p-6 text-center">
+      <h3 className="font-serif text-xl font-medium mb-2">
+        You&apos;re on the list
+      </h3>
+      <p className="text-sm text-ink-secondary">
+        We&apos;ll email you at <span className="text-ink">{email}</span> when
+        DoFast is ready for you.
+      </p>
+    </div>
+  ) : (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row">
+      <label htmlFor="waitlist-email" className="sr-only">
+        Email address
+      </label>
+      <input
+        id="waitlist-email"
+        type="email"
+        placeholder="you@yourbusiness.com"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+        className="h-11 flex-1 rounded-control border border-line-strong bg-surface px-4 text-body text-ink placeholder:text-ink-tertiary focus:outline-none"
+      />
+      <button
+        type="submit"
+        className="h-11 whitespace-nowrap rounded-control bg-accent px-5 font-medium text-white transition-colors hover:bg-accent-strong"
+      >
+        Join the waitlist
+      </button>
+    </form>
+  );
+
   return (
-    <main className="min-h-screen bg-black text-white">
-      <nav className="flex items-center justify-between px-8 py-6 max-w-6xl mx-auto">
-        <span className="text-2xl font-bold text-white">DoFast</span>
-        <a href="#waitlist" className="bg-white text-black px-5 py-2 rounded-full text-sm font-semibold hover:bg-gray-200 transition">
-          Join Waitlist
-        </a>
+    <main className="min-h-screen">
+      <nav className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
+        <span className="font-serif text-lg font-semibold">DoFast</span>
+        <div className="flex items-center gap-5">
+          <Link
+            href="/login"
+            className="text-sm text-ink-secondary transition-colors hover:text-ink"
+          >
+            Log in
+          </Link>
+          <a
+            href="#waitlist"
+            className="rounded-control bg-accent px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent-strong"
+          >
+            Join the waitlist
+          </a>
+        </div>
       </nav>
 
-      <section className="flex flex-col items-center text-center px-6 pt-24 pb-20">
-        <div className="bg-white/10 text-white text-xs px-4 py-1.5 rounded-full mb-6 border border-white/20">
-          🚀 Coming Soon — Join the waitlist
-        </div>
-        <h1 className="text-5xl md:text-7xl font-extrabold leading-tight max-w-4xl">
-          Update your website by just{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
-            texting AI
-          </span>
+      <section className="mx-auto max-w-3xl px-6 pt-24 pb-20 text-center">
+        <h1 className="font-serif text-4xl font-semibold leading-tight sm:text-5xl">
+          Your website, updated by asking.
         </h1>
-        <p className="mt-6 text-lg text-gray-400 max-w-xl">
-          Connect your GitHub, Vercel, or WordPress site. Then just chat — DoFast handles the rest. No code needed.
+        <p className="mx-auto mt-6 max-w-xl text-body text-ink-secondary">
+          DoFast connects to the code behind your site and makes the changes
+          you describe. You see a preview of every change before it goes live.
         </p>
-
-        <div id="waitlist" className="mt-10 w-full max-w-md">
-          {submitted ? (
-            <div className="bg-white/10 border border-white/20 rounded-2xl p-6 text-center">
-              <div className="text-4xl mb-3">🎉</div>
-              <h3 className="text-xl font-bold mb-2">You&apos;re on the list!</h3>
-              <p className="text-gray-400 text-sm">Check your email for a welcome message from DoFast.</p>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="flex-1 px-5 py-3 rounded-full bg-white/10 border border-white/20 text-white placeholder-gray-500 focus:outline-none focus:border-white"
-              />
-              <button type="submit" className="bg-white text-black px-6 py-3 rounded-full font-semibold hover:bg-gray-200 transition">
-                Get Early Access
-              </button>
-            </form>
-          )}
-        </div>
-        <p className="mt-3 text-xs text-gray-600">Free during beta. No credit card required.</p>
-      </section>
-
-      <section className="max-w-5xl mx-auto px-6 py-20">
-        <h2 className="text-3xl font-bold text-center mb-14">How it works</h2>
-        <div className="grid md:grid-cols-3 gap-8">
-          {[
-            { step: "1", title: "Connect your site", desc: "Link your GitHub repo, Vercel project, or WordPress site in one click." },
-            { step: "2", title: "Text your change", desc: 'Just say "Change our contact email" or "Add a new team member".' },
-            { step: "3", title: "Done in seconds", desc: "DoFast makes the change, shows you a preview, and deploys when you approve." },
-          ].map((item) => (
-            <div key={item.step} className="bg-white/5 border border-white/10 rounded-2xl p-6">
-              <div className="text-4xl font-black text-white/20 mb-4">{item.step}</div>
-              <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
-              <p className="text-gray-400 text-sm">{item.desc}</p>
-            </div>
-          ))}
+        <div id="waitlist" className="mx-auto mt-10 max-w-md">
+          {waitlistForm}
+          <p className="mt-3 text-sm text-ink-tertiary">
+            Free during beta. No credit card required.
+          </p>
         </div>
       </section>
 
-      <section className="max-w-5xl mx-auto px-6 py-10 pb-24">
-        <h2 className="text-3xl font-bold text-center mb-14">Why DoFast?</h2>
-        <div className="grid md:grid-cols-2 gap-6">
-          {[
-            { icon: "⚡", title: "Instant updates", desc: "No waiting for a developer. Changes go live in minutes." },
-            { icon: "🔗", title: "Works with your stack", desc: "GitHub, Vercel, WordPress — connect what you already use." },
-            { icon: "🛡️", title: "Safe by default", desc: "Every change creates a preview first. You approve before it goes live." },
-            { icon: "💬", title: "Just chat", desc: "No dashboards to learn. Just type what you want in plain English." },
-          ].map((f) => (
-            <div key={f.title} className="flex gap-4 bg-white/5 border border-white/10 rounded-2xl p-6">
-              <span className="text-3xl">{f.icon}</span>
-              <div>
-                <h3 className="font-semibold mb-1">{f.title}</h3>
-                <p className="text-gray-400 text-sm">{f.desc}</p>
-              </div>
+      <section className="border-t border-line bg-surface">
+        <div className="mx-auto max-w-5xl px-6 py-20">
+          <h2 className="mb-12 text-center font-serif text-3xl font-semibold">
+            How it works
+          </h2>
+          <ol className="grid gap-8 md:grid-cols-3">
+            {steps.map((item, index) => (
+              <li key={item.title}>
+                <p className="font-serif text-2xl font-semibold text-ink-tertiary">
+                  {index + 1}
+                </p>
+                <h3 className="mt-2 mb-1 text-lg font-semibold">{item.title}</h3>
+                <p className="text-sm text-ink-secondary">{item.desc}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-5xl px-6 py-20">
+        <h2 className="mb-3 text-center font-serif text-3xl font-semibold">
+          Built to be trusted with your live site
+        </h2>
+        <p className="mx-auto mb-12 max-w-xl text-center text-ink-secondary">
+          DoFast changes real websites, so safety is the product — not a
+          setting.
+        </p>
+        <div className="grid gap-6 md:grid-cols-3">
+          {promises.map((item) => (
+            <div key={item.title} className="rounded-card border border-line bg-surface p-6">
+              <h3 className="mb-1 font-semibold">{item.title}</h3>
+              <p className="text-sm text-ink-secondary">{item.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="text-center px-6 py-20 border-t border-white/10">
-        <h2 className="text-4xl font-bold mb-4">Ready to move fast?</h2>
-        <p className="text-gray-400 mb-8">Join hundreds of businesses updating their sites with AI.</p>
-        <a href="#waitlist" className="bg-white text-black px-8 py-4 rounded-full font-semibold text-lg hover:bg-gray-200 transition">
-          Join the Waitlist
-        </a>
+      <section className="border-t border-line bg-surface">
+        <div className="mx-auto max-w-3xl px-6 py-16 text-center">
+          <h2 className="font-serif text-2xl font-semibold mb-3">
+            Works with what you have
+          </h2>
+          <p className="mx-auto max-w-xl text-ink-secondary">
+            DoFast currently supports websites built with Next.js or React and
+            hosted through GitHub. More platforms will follow — join the
+            waitlist and we&apos;ll tell you when yours is ready.
+          </p>
+          <a
+            href="#waitlist"
+            className="mt-8 inline-block rounded-control bg-accent px-6 py-2.5 font-medium text-white transition-colors hover:bg-accent-strong"
+          >
+            Join the waitlist
+          </a>
+        </div>
       </section>
 
-      <footer className="text-center py-8 text-gray-600 text-sm border-t border-white/10">
-        © 2025 DoFast. All rights reserved.
+      <footer className="border-t border-line py-8 text-center text-sm text-ink-tertiary">
+        © 2026 DoFast. All rights reserved.
       </footer>
     </main>
   );

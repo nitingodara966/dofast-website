@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/session";
+import { Badge } from "@/components/ui/surfaces";
+import { buttonClasses } from "@/components/ui/button";
 import { completeOnboarding } from "./actions";
 
 export const metadata: Metadata = { title: "Welcome — DoFast" };
@@ -29,42 +31,37 @@ export default async function OnboardingPage() {
   if (user.onboardingCompletedAt) redirect("/dashboard");
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold mb-2">
-        Welcome to DoFast{user.name ? `, ${user.name}` : ""} 👋
+    <div className="mx-auto max-w-2xl">
+      <h1 className="font-serif text-2xl font-semibold mb-2">
+        Welcome to DoFast{user.name ? `, ${user.name}` : ""}
       </h1>
-      <p className="text-gray-400 mb-10">
+      <p className="text-ink-secondary mb-10">
         DoFast lets you connect your website and update it by chatting with AI.
         Here&apos;s how it works:
       </p>
 
-      <div className="flex flex-col gap-4 mb-10">
+      <ol className="mb-10 flex flex-col gap-4">
         {steps.map((item) => (
-          <div
+          <li
             key={item.step}
-            className="flex gap-5 bg-white/5 border border-white/10 rounded-2xl p-6"
+            className="flex gap-5 rounded-card border border-line bg-surface p-6"
           >
-            <div className="text-4xl font-black text-white/20">{item.step}</div>
+            <span className="font-serif text-2xl font-semibold text-ink-tertiary">
+              {item.step}
+            </span>
             <div>
-              <h2 className="text-lg font-semibold mb-1 flex items-center gap-3">
+              <h2 className="mb-1 flex flex-wrap items-center gap-2 text-lg font-semibold">
                 {item.title}
-                {item.badge && (
-                  <span className="bg-white/10 border border-white/20 text-gray-400 text-xs px-3 py-1 rounded-full font-normal">
-                    {item.badge}
-                  </span>
-                )}
+                {item.badge && <Badge>{item.badge}</Badge>}
               </h2>
-              <p className="text-gray-400 text-sm">{item.desc}</p>
+              <p className="text-sm text-ink-secondary">{item.desc}</p>
             </div>
-          </div>
+          </li>
         ))}
-      </div>
+      </ol>
 
       <form action={completeOnboarding} className="text-center">
-        <button
-          type="submit"
-          className="bg-white text-black px-8 py-4 rounded-full font-semibold text-lg hover:bg-gray-200 transition"
-        >
+        <button type="submit" className={buttonClasses("primary", "md")}>
           Got it — take me to my dashboard
         </button>
       </form>

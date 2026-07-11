@@ -3,9 +3,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
-
-const inputClass =
-  "w-full px-5 py-3 rounded-full bg-white/10 border border-white/20 text-white placeholder-gray-500 focus:outline-none focus:border-white";
+import { Button } from "@/components/ui/button";
+import { TextField } from "@/components/ui/field";
+import { Alert } from "@/components/ui/surfaces";
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
@@ -39,77 +39,65 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   };
 
   return (
-    <div className="w-full max-w-md bg-white/5 border border-white/10 rounded-2xl p-8">
-      <h1 className="text-2xl font-bold mb-1">
+    <div className="w-full max-w-md rounded-card border border-line bg-surface p-8">
+      <h1 className="font-serif text-2xl font-semibold mb-1">
         {mode === "signup" ? "Create your account" : "Welcome back"}
       </h1>
-      <p className="text-gray-400 text-sm mb-6">
+      <p className="text-sm text-ink-secondary mb-6">
         {mode === "signup"
-          ? "Start updating your website by chatting with AI."
+          ? "Start updating your website by asking."
           : "Sign in to your DoFast account."}
       </p>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {mode === "signup" && (
-          <input
+          <TextField
+            label="Your name"
             type="text"
-            placeholder="Your name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            className={inputClass}
+            autoComplete="name"
           />
         )}
-        <input
+        <TextField
+          label="Email address"
           type="email"
-          placeholder="Email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className={inputClass}
+          autoComplete="email"
         />
-        <input
+        <TextField
+          label="Password"
           type="password"
-          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
           minLength={8}
           autoComplete={mode === "signup" ? "new-password" : "current-password"}
-          className={inputClass}
+          help={mode === "signup" ? "At least 8 characters." : undefined}
         />
 
-        {error && (
-          <p role="alert" className="text-red-400 text-sm px-2">
-            {error}
-          </p>
-        )}
+        {error && <Alert tone="danger">{error}</Alert>}
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="bg-white text-black px-6 py-3 rounded-full font-semibold hover:bg-gray-200 transition disabled:opacity-60"
-        >
-          {pending
-            ? "Please wait…"
-            : mode === "signup"
-              ? "Create account"
-              : "Sign in"}
-        </button>
+        <Button type="submit" loading={pending}>
+          {mode === "signup" ? "Create account" : "Sign in"}
+        </Button>
       </form>
 
-      <p className="text-gray-500 text-sm mt-6 text-center">
+      <p className="mt-6 text-center text-sm text-ink-secondary">
         {mode === "signup" ? (
           <>
             Already have an account?{" "}
-            <Link href="/login" className="text-white hover:underline">
+            <Link href="/login" className="text-accent-strong hover:underline">
               Sign in
             </Link>
           </>
         ) : (
           <>
             New to DoFast?{" "}
-            <Link href="/signup" className="text-white hover:underline">
+            <Link href="/signup" className="text-accent-strong hover:underline">
               Create an account
             </Link>
           </>

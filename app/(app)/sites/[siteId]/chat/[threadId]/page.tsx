@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { requireOnboardedUser } from "@/lib/auth/session";
 import { getSiteForUser } from "@/lib/db/sites";
 import { getThreadForUser, listMessagesForThread } from "@/lib/db/chat";
+import { Alert } from "@/components/ui/surfaces";
+import { buttonClasses } from "@/components/ui/button";
 import { sendMessageAction } from "../actions";
 
 export const metadata: Metadata = { title: "Chat — DoFast" };
@@ -34,21 +36,23 @@ export default async function ChatThreadPage({
   const errorMessage = errorKey ? (errorMessages[errorKey] ?? null) : null;
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <p className="text-gray-500 text-sm mb-2">
+    <div className="mx-auto max-w-2xl">
+      <p className="mb-2 text-sm text-ink-tertiary">
         <Link
           href={`/sites/${site.id}/chat`}
-          className="hover:text-white transition"
+          className="transition-colors hover:text-ink"
         >
           ← All chats
         </Link>{" "}
         · {site.repoFullName}
       </p>
-      <h1 className="text-2xl font-bold mb-8 truncate">{thread.title}</h1>
+      <h1 className="mb-8 truncate font-serif text-xl font-medium">
+        {thread.title}
+      </h1>
 
-      <div className="flex flex-col gap-4 mb-8">
+      <div className="mb-8 flex flex-col gap-4">
         {messages.length === 0 && (
-          <p className="text-gray-400 text-sm text-center py-8">
+          <p className="py-8 text-center text-sm text-ink-secondary">
             Say hello — tell DoFast what you&apos;d like to change on your site.
           </p>
         )}
@@ -57,11 +61,11 @@ export default async function ChatThreadPage({
             key={message.id}
             className={
               message.role === "user"
-                ? "self-end max-w-[85%] bg-white text-black rounded-2xl rounded-br-sm px-5 py-3"
-                : "self-start max-w-[85%] bg-white/5 border border-white/10 rounded-2xl rounded-bl-sm px-5 py-3"
+                ? "max-w-[85%] self-end rounded-card rounded-br-sm bg-ink px-4 py-3 text-paper"
+                : "max-w-[85%] self-start rounded-card rounded-bl-sm border border-line bg-surface px-4 py-3"
             }
           >
-            <p className="text-sm whitespace-pre-wrap break-words">
+            <p className="whitespace-pre-wrap break-words text-body">
               {message.content}
             </p>
           </div>
@@ -69,12 +73,9 @@ export default async function ChatThreadPage({
       </div>
 
       {errorMessage && (
-        <div
-          role="alert"
-          className="bg-red-500/10 border border-red-500/30 text-red-300 text-sm rounded-2xl px-6 py-4 mb-4"
-        >
+        <Alert tone="danger" className="mb-4">
           {errorMessage}
-        </div>
+        </Alert>
       )}
 
       <form action={sendMessageAction} className="flex gap-3">
@@ -82,16 +83,14 @@ export default async function ChatThreadPage({
         <input
           type="text"
           name="message"
-          placeholder="Describe the change you want…"
+          aria-label="Your message"
+          placeholder="What would you like to change?"
           required
           maxLength={4000}
           autoComplete="off"
-          className="flex-1 px-5 py-3 rounded-full bg-white/10 border border-white/20 text-white placeholder-gray-500 focus:outline-none focus:border-white"
+          className="h-11 flex-1 rounded-control border border-line-strong bg-surface px-4 text-body text-ink placeholder:text-ink-tertiary focus:outline-none"
         />
-        <button
-          type="submit"
-          className="bg-white text-black px-6 py-3 rounded-full font-semibold hover:bg-gray-200 transition"
-        >
+        <button type="submit" className={buttonClasses("primary", "md")}>
           Send
         </button>
       </form>

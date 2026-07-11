@@ -10,17 +10,19 @@ export default async function AppLayout({
   const user = await requireUser();
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <nav className="flex items-center justify-between px-8 py-6 max-w-6xl mx-auto border-b border-white/10">
-        <Link href="/dashboard" className="text-2xl font-bold">
-          DoFast
-        </Link>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-400">{user.email}</span>
-          <SignOutButton />
+    <div className="min-h-screen">
+      <nav className="border-b border-line bg-surface">
+        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
+          <Link href="/dashboard" className="font-serif text-lg font-semibold">
+            DoFast
+          </Link>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-ink-secondary">{user.email}</span>
+            <SignOutButton />
+          </div>
         </div>
       </nav>
-      <main className="max-w-6xl mx-auto px-8 py-10">{children}</main>
+      <main className="mx-auto max-w-5xl px-6 py-10">{children}</main>
     </div>
   );
 }
