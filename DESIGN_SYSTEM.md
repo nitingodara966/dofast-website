@@ -426,6 +426,18 @@ All §1 tokens land as CSS custom properties in `app/globals.css` under Tailwind
 (add Source Serif 4 alongside the existing Geist pair). No configuration files, no
 new dependencies. Components reference tokens through Tailwind utilities only.
 
+**As-built deviations (recorded at M7.6):**
+1. The §1.1 border tokens are implemented as `--color-line` /
+   `--color-line-strong` (utilities `border-line`, `border-line-strong`) —
+   same values and semantics; renamed to avoid Tailwind v4's awkward
+   `border-border` utility.
+2. The §1.2 type scale is implemented as Tailwind's default ramp plus one
+   custom token, `--text-body` (16px / 1.6), for Simple-register reading
+   surfaces. The full custom ramp (13px `text-sm`, 14px `text-base`, named
+   display sizes) is deferred until a dense Advanced-Mode surface (diff
+   viewer, changes table — M9+) actually needs it; sizes in use today map to
+   the spec within 1px.
+
 ### 5.2 Shared primitives
 `components/ui/` gains the nine primitives (§2.1) as thin, typed, zero-dependency
 React components (+ the ~15-icon local SVG set). Compositions (§2.2) live beside the
