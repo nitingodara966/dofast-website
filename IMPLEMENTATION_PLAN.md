@@ -1,6 +1,7 @@
 # DoFast — Implementation Plan
 
-**Status:** v2 — M0–M7.5 complete; M7.6 next (awaiting explicit approval).
+**Status:** v2 — M0–M7.6 complete and production-accepted (2026-07-11).
+M8 next, blocked on explicit owner authorization.
 Supersedes v1 (whose original M4–M14 numbering is retired; the as-built ledger
 below is authoritative).
 
@@ -32,9 +33,12 @@ below is authoritative).
 | M5 | Repository selection: paginated listing, token-scoped access validation, framework detection, `sites` table, webhook invalidation | `35e3827` |
 | M6 | Read-only inspection: `repo_snapshots`, filter pipeline + denylist, guarded file reads, stale-write ordering guard, site workspace page | `128044f` (+`9566a89` env-less build fix, `c64fb7c` Date-param driver fix) |
 | M7 | Per-site chat: threads/messages with CHECKs, ownership-scoped DAL, rate limits, placeholder responder seam | `a8f69c6` |
-| M7.5 | `DESIGN_SYSTEM.md` + `UX_FLOWS.md` approved with rulings: Kiln accent; Source Serif 4/Geist/Geist Mono; hand-rolled dialogs under a11y contract (stop-and-ask fallback); light-only; text wordmark; Simple default for ALL accounts; M7.6→M8 sequencing accepted | docs |
+| M7.5 | `DESIGN_SYSTEM.md` + `UX_FLOWS.md` approved with rulings: Kiln accent; Source Serif 4/Geist/Geist Mono; hand-rolled dialogs under a11y contract (stop-and-ask fallback); light-only; text wordmark; Simple default for ALL accounts; M7.6→M8 sequencing accepted | `4ab8831` |
+| M7.6 | Design system implemented: tokens (`@theme`), Source Serif 4, nine `components/ui` primitives with test-enforced dialog/menu a11y contract, every surface migrated with zero behavior change, landing page redesigned per copy canon with waitlist regression-locked; owner production acceptance incl. responsive matrix (360–1440), auth round-trip, ownership isolation | `9a4a612` (+`7c92d71` as-built deviation record) |
 
-Current DB migrations: 0000–0006. Tests: 238. CI green; production healthy.
+Current DB migrations: 0000–0006. Tests: 245. CI green; production healthy.
+Owner production acceptance of M7.5+M7.6 recorded 2026-07-11 (landing, auth,
+dashboard, site/files, chat personally reviewed on the deployed redesign).
 
 ---
 
