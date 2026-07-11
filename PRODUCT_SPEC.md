@@ -1,94 +1,105 @@
 # DoFast — Product Specification
 
-**Status:** Draft v1 (planning only — no product code written yet)
-**Last updated:** 2026-07-05
+**Status:** v2 — dual-mode direction, approved. Supersedes v1.
+**Companions:** `ARCHITECTURE.md` (system design) · `IMPLEMENTATION_PLAN.md` (roadmap)
+· `DESIGN_SYSTEM.md` + `UX_FLOWS.md` (approved M7.5 design/UX baseline).
 
-## 1. What DoFast Is
+## 1. What DoFast is
 
-DoFast is an AI-powered SaaS that lets non-technical website owners update their existing website by chatting with an AI. The user connects their site's GitHub repository once; after that, changes like "update our contact email" or "add a new team member" happen through a chat conversation, with a visual preview and an explicit approve step before anything goes live.
+DoFast lets people update their existing website by asking. It connects to the
+GitHub repository behind a Next.js/React site; the user describes a change in
+chat, reviews a plan, sees a private preview, and explicitly makes it live —
+with verification afterward and one-click undo.
 
-**One-line pitch:** Update your website by just texting AI.
+**One line:** Your website, updated by asking.
 
-## 2. Target Users
+## 2. Two audiences, one product (dual mode)
 
-- **Primary (MVP):** Small business owners, founders, and marketers whose website lives in a GitHub-hosted **Next.js/React** repository (typically deployed on Vercel), who don't want to wait on a developer for small content and copy changes.
-- **Secondary (post-MVP):** Agencies managing many client sites; WordPress and other-stack site owners (explicitly out of scope for MVP despite being mentioned on the landing page).
+| | **Simple Mode** (default) | **Advanced Mode** |
+|---|---|---|
+| Audience | Local business owners, non-technical operators | Developers, agencies, technical founders |
+| Language | Plain English; zero git/deploy vocabulary | Branches, diffs, SHAs, deploy detail |
+| Request | Chat + quick-action suggestions | Free-form technical chat |
+| Review | Plain-language before→after plan; "See your new site" | Same plan + unified diff + technical evidence |
+| Publish | "Make it live" | Merge or pull-request strategy |
+| After | "Live and working — checked at {time}"; Undo | Verification detail; revert with SHAs |
 
-## 3. Core Product Flow
+**Mode policy (ruled):** every account — existing, test, and new — defaults to
+**Simple Mode**. Users pick at onboarding and can switch anytime from the account
+menu. Switching changes presentation, terminology, density, and guardrail
+strictness only — never ownership, security, data, or lifecycle semantics. Both
+renderings of every plan are always generated and stored; mode selects what is
+shown.
+
+## 3. Core lifecycle (both modes, one state machine)
 
 ```
-Landing Page → Sign Up / Login → Dashboard → Connect GitHub (GitHub App install)
-→ Select Repository → Chat with Website → AI Generates Proposed Code Changes
-→ Show Diff → User Approves or Rejects → Create Temporary Branch
-→ Generate Preview Deployment → User Reviews Preview → Publish Approved Changes
+Ask → (clarify) → Plan (Draft) → Preview (private) → Approve → Make live
+→ Verify → History  ·  any step → refine/reject  ·  newest published → Undo
 ```
 
-Key product invariants (non-negotiable):
+Product invariants (non-negotiable):
+1. AI never writes to the production branch. All proposed changes live on
+   DoFast-managed `dofast/*` branches.
+2. Two explicit human gates, always: **create preview** (first repo write) and
+   **make it live** (only production write). Simple Mode may offer next steps
+   more insistently; it never takes them.
+3. "Nothing has changed yet" is a rendered state, not an assumption. Preview and
+   production are visually and verbally distinct at all times.
+4. Publish is not done until **verified** — the post-publish check is visible,
+   timestamped, and failure offers undo.
+5. Every outcome — published, rejected, failed, superseded, undone — is recorded
+   in a complete, visible history.
+6. Minimum GitHub access: a GitHub App with per-repository grants and
+   least-privilege permissions (read-only until the write milestone), never
+   personal access tokens.
 
-1. **AI never writes to the production branch directly.** All AI-generated changes land on a DoFast-managed temporary branch.
-2. **Nothing goes live without explicit user approval** — approval of the diff, then approval after seeing the preview.
-3. **Every change is traceable**: who asked for it, what the AI proposed, what was approved, and what was published.
-4. **DoFast asks for the minimum GitHub access needed** (GitHub App with per-repository installation, not personal access tokens).
+## 4. Scope
 
-## 4. MVP Scope
+### Shipped (production-accepted)
+Landing page + persisted waitlist · email/password auth · onboarding ·
+GitHub App connection (read-only) · repository selection with framework
+detection · read-only repository indexing/snapshots · per-site chat with
+persisted threads (placeholder responder).
 
-### In scope
-
-| Area | MVP behavior |
-|---|---|
-| Marketing | Existing landing page + waitlist (preserved as-is) |
-| Auth | Email/password + GitHub OAuth sign-in |
-| Dashboard | Protected area listing connected sites and recent changes |
-| Onboarding | Guided flow: install GitHub App → pick a repo → confirm it's a supported Next.js/React site |
-| GitHub connection | GitHub App installation scoped to selected repositories |
-| Repo inspection | Read-only browsing/indexing of the repo so the AI has context |
-| Chat | Per-site chat threads; user describes a change in plain English |
-| AI changes | AI proposes structured file edits (never executes arbitrary commands) |
-| Diff review | Human-readable diff of proposed changes; approve or reject |
-| Branching | Approved changes committed to a `dofast/<change-id>` branch via GitHub API |
-| Preview | Preview URL surfaced from the user's existing Vercel↔GitHub integration |
-| Publish | Merge the DoFast branch into the production branch after final approval |
-| Safety | Usage limits, audit logging, error handling, secret isolation |
+### In scope (remaining MVP)
+Design system + full UI migration (incl. landing page) · dual-mode foundation ·
+provider-agnostic AI chat · structured change plans with dual renderings ·
+approval + branch writes (permission upgrade) · preview deployments via the
+user's own Vercel↔GitHub integration · publish + verification · history +
+undo/rollback · usage limits, hardening.
 
 ### Out of scope for MVP
+WordPress/Webflow/non-GitHub sites · non-Next.js/React repos (politely refused)
+· DoFast-hosted preview infra · teams/roles · billing (schema stays
+billing-ready) · SMS/mobile apps · dark mode (tokens stay dark-ready; ruled:
+light-only launch) · brand mark (ruled: text-only wordmark until a genuine need).
 
-- WordPress, Webflow, or any non-GitHub site connection (landing page mentions these as vision; product ships GitHub-only).
-- Non-Next.js/React repositories (detect and politely refuse at onboarding).
-- DoFast-hosted preview infrastructure (we piggyback on the user's Vercel project).
-- Image generation/asset uploads, e-commerce data edits, CMS integrations.
-- Teams/multi-user organizations, roles and permissions beyond a single owner.
-- Billing (beta is free; design the schema so plans/limits can be added).
-- Mobile apps; real "texting" (SMS) — chat is in-app.
+## 5. Experience principles (binding)
 
-## 5. User Stories (MVP)
+Defined in full in `DESIGN_SYSTEM.md` and `UX_FLOWS.md`; the contract in brief:
+- Calm, precise, accountable — a careful contractor, not a hype machine. No
+  unverifiable claims, no hype vocabulary, no emoji UI, no gradients, one accent
+  (Kiln rust `#B04A25`) used with restraint.
+- Simple reduces anxiety without hiding truth; Advanced provides evidence
+  without clogging the workflow.
+- Every UI milestone passes the Anti-AI-Template Checklist
+  (`DESIGN_SYSTEM.md` §4) before merge.
+- The marketing landing page is part of the trust surface: same system, same
+  copy principles, waitlist/auth/SEO behavior regression-locked.
 
-1. As a visitor, I can join the waitlist from the landing page (already live — must keep working).
-2. As a user, I can create an account and sign in securely.
-3. As a user, I can install the DoFast GitHub App on my account/org and grant access to only the repos I choose.
-4. As a user, I can select one repository as my "site" and see basic info about it (framework detected, default branch, last deploy).
-5. As a user, I can open a chat for my site and ask for a change in plain English.
-6. As a user, I see exactly which files the AI wants to change and a readable diff, and I can approve or reject.
-7. As a user, after approving, I get a preview link showing my site with the change applied.
-8. As a user, I can publish the previewed change to my live site, or discard it.
-9. As a user, I can see a history of all changes: requested → proposed → approved/rejected → previewed → published/discarded.
-10. As DoFast operators, we can see errors, AI token usage per user, and enforce per-user usage limits.
+## 6. Success criteria (MVP)
 
-## 6. Success Criteria for MVP
+- A Simple-Mode user goes from signup to a published, verified one-file copy
+  change without encountering a single technical term — in under 10 minutes.
+- An Advanced-Mode user can trace any published change to its commit, branch,
+  diff, and verification evidence in ≤2 clicks from history.
+- Zero AI writes to production branches without both human gates.
+- Every published change has a complete audit trail and a working undo path.
 
-- A real user with a Vercel-deployed Next.js site can go from sign-up to a published one-file copy change in **under 10 minutes** without touching git.
-- Zero incidents of AI writing to a production branch without approval.
-- Every published change has a complete audit trail row.
+## 7. Open product questions
 
-## 7. Constraints & Principles
-
-- Single Next.js application (no microservices) until scale demands otherwise.
-- GitHub App auth only; never ask users for personal access tokens.
-- AI provider must be swappable behind an internal interface (start with Anthropic Claude).
-- Secrets live only in server-side environment variables; nothing sensitive in client bundles.
-- The existing landing page and waitlist are preserved; marketing site and product share one repo/app for MVP.
-
-## 8. Open Product Questions
-
-- Should rejected proposals allow "revise" (feed rejection reason back to the AI) in MVP, or is reject-and-re-ask enough? (Plan assumes simple reject + new message.)
-- What are beta usage limits? (Plan assumes N chat requests/day and M published changes/day per user, configurable.)
-- Do we auto-delete `dofast/*` branches after publish/discard? (Plan assumes yes, after a grace period.)
+- Quota levels for beta (assumed: configurable daily chat/publish caps — M14).
+- Advanced-Mode in-place plan editing (deferred beyond MVP; refine-request is
+  the MVP loop).
+- When a real brand mark is warranted (explicitly not now).

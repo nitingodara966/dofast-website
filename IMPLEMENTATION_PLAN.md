@@ -1,259 +1,191 @@
 # DoFast — Implementation Plan
 
-**Status:** Draft v1 — awaiting approval before any product code is written.
-**Rule for every milestone:** re-read the relevant guide in `node_modules/next/dist/docs/01-app/` before coding (Next.js 16 conventions differ from prior versions — e.g. `proxy.ts`, not `middleware.ts`).
+**Status:** v2 — M0–M7.5 complete; M7.6 next (awaiting explicit approval).
+Supersedes v1 (whose original M4–M14 numbering is retired; the as-built ledger
+below is authoritative).
 
-Milestones are small and independently shippable. Each ends with the app deployable and the landing page untouched in behavior.
+## Standing rules (every milestone)
 
----
+1. Consult `node_modules/next/dist/docs/` before using framework APIs (AGENTS.md).
+2. Additive, CHECK-constrained migrations via `drizzle-kit generate`; applied
+   only through `npm run db:migrate` with explicit approval; never destructive.
+3. Ownership-scoped DAL for all data access; server actions re-run auth.
+4. Deterministic tests (mocked providers/DB/GitHub) + lint + typecheck +
+   production build + **env-less build** green before commit.
+5. Security review of every diff; secrets never in repo, logs, or client bundle.
+6. From M7.6: UI uses tokens/primitives only and passes the Anti-AI-Template
+   Checklist (`DESIGN_SYSTEM.md` §4), recorded in the milestone report.
+7. One clean commit per milestone; push and production migration only on
+   approval; production acceptance by the owner gates the next milestone.
+8. New dependencies, env vars, or GitHub App permission changes require
+   explicit approval before introduction.
 
-## M0 — Baseline hardening (preserve landing page & waitlist)
+## As-built ledger (production-accepted)
 
-**Objective:** Keep the landing page pixel-identical while removing its technical debt, and set up the hygiene every later milestone relies on (env handling, tests, CI).
+| M | Delivered | Commit |
+|---|---|---|
+| M0 | Landing preserved; waitlist moved server-side (validation, rate limit, safe errors); metadata fix; Vitest+CI | `1e70634` |
+| M1 | Supabase Postgres + Drizzle; `waitlist_signups`/`audit_log`; persistence-first waitlist semantics | `6964cba` |
+| M2 | Better Auth email/password; protected `(app)` shell; `proxy.ts` + `requireUser` defense-in-depth | `88cdbcd` |
+| M3 | Onboarding with persisted `onboarding_completed_at` (input:false); `requireOnboardedUser` | `5ff01b1` |
+| M4 | GitHub App (read-only): signed-state install flow, atomic claim, HMAC webhooks, lifecycle handling; zero-dep App auth | `e288700` |
+| M5 | Repository selection: paginated listing, token-scoped access validation, framework detection, `sites` table, webhook invalidation | `35e3827` |
+| M6 | Read-only inspection: `repo_snapshots`, filter pipeline + denylist, guarded file reads, stale-write ordering guard, site workspace page | `128044f` (+`9566a89` env-less build fix, `c64fb7c` Date-param driver fix) |
+| M7 | Per-site chat: threads/messages with CHECKs, ownership-scoped DAL, rate limits, placeholder responder seam | `a8f69c6` |
+| M7.5 | `DESIGN_SYSTEM.md` + `UX_FLOWS.md` approved with rulings: Kiln accent; Source Serif 4/Geist/Geist Mono; hand-rolled dialogs under a11y contract (stop-and-ask fallback); light-only; text wordmark; Simple default for ALL accounts; M7.6→M8 sequencing accepted | docs |
 
-**Files:**
-- Move `app/page.tsx` → `app/(marketing)/page.tsx` unchanged (route stays `/`).
-- New `app/api/waitlist/route.ts` — accepts `{ email }`, validates with Zod, sends welcome email server-side, logs signup (DB storage arrives in M1; until then, keep EmailJS server-side or file/console record).
-- Edit `app/(marketing)/page.tsx` *minimally*: swap the direct `emailjs.send()` call for `fetch('/api/waitlist')`. No visual/content changes.
-- Edit `app/layout.tsx` metadata: real title/description (currently "Create Next App").
-- New `.env.example`, `app/error.tsx`, `app/not-found.tsx`.
-- New test setup: Vitest + Testing Library; GitHub Actions workflow running `lint`, `tsc --noEmit`, tests, `next build`.
-
-**DB changes:** none yet.
-**Env vars:** `EMAILJS_SERVICE_ID`, `EMAILJS_TEMPLATE_ID`, `EMAILJS_PUBLIC_KEY`, `EMAILJS_PRIVATE_KEY` (server-side EmailJS REST call) — or replacement transactional email vars if we switch providers later.
-**Security:** removes hardcoded EmailJS IDs from the client bundle; adds naive in-memory rate limit + email validation on the waitlist endpoint.
-**Tests / acceptance:**
-- Landing page renders identically (snapshot test); waitlist submit succeeds and shows the 🎉 state.
-- `POST /api/waitlist` rejects invalid emails (400) and accepts valid ones (200).
-- CI green on a fresh clone with only `.env.example` values documented.
-
----
-
-## M1 — Database setup & schema
-
-**Objective:** Postgres + Drizzle wired up, initial schema migrated, waitlist persisted.
-
-**Files:** `lib/db/index.ts` (client), `lib/db/schema.ts`, `drizzle.config.ts`, `lib/db/migrations/*`; update `app/api/waitlist/route.ts` to insert into `waitlist_signups`.
-**DB changes:** create `waitlist_signups`, `audit_log` tables (full schema in ARCHITECTURE.md §2.4 arrives incrementally per milestone).
-**Env vars:** `DATABASE_URL`.
-**Security:** DB credentials server-only; Drizzle parameterized queries only (no raw SQL string interpolation); least-privilege DB role.
-**Tests / acceptance:**
-- Migration runs cleanly on empty DB; repeated runs are no-ops.
-- Waitlist signup writes a row (integration test against a local/branch DB).
-- `lib/db` never imported from a client component (enforce with `server-only` package import).
+Current DB migrations: 0000–0006. Tests: 238. CI green; production healthy.
 
 ---
 
-## M2 — Authentication
+## M7.6 — Design System Foundation & Shell Migration
 
-**Objective:** Users can sign up, sign in (email/password + GitHub OAuth), and sign out. Sessions verifiable server-side.
+**Objective:** implement the approved design system and migrate every existing
+surface (including the landing page) with **zero functional behavior change**.
 
-**Files:** `lib/auth/index.ts` (Better Auth config), `lib/auth/session.ts` (`getUser()`, `requireUser()`), `app/api/auth/[...all]/route.ts`, `app/(auth)/login/page.tsx`, `app/(auth)/signup/page.tsx`, Better Auth schema tables via Drizzle.
-**DB changes:** Better Auth tables (`user`, `session`, `account`, `verification`).
-**Env vars:** `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`.
-**Security:** httpOnly/secure/sameSite cookies (library default); password hashing (scrypt, library default); OAuth `state` handled by library; sign-in GitHub OAuth scopes limited to identity/email — **no repo scopes**; rate-limit auth endpoints.
-**Tests / acceptance:**
-- Sign up → session cookie set → `getUser()` returns the user in a server component.
-- Wrong password rejected; sign-out invalidates the session.
-- GitHub OAuth round-trip works locally (manual acceptance) and links to an existing email account correctly.
+**Files:** `app/globals.css` (token set via `@theme`), font loading (Source
+Serif 4 added beside Geist via `next/font` — no packages), `components/ui/*`
+(nine primitives + icon set + tests), restyled: shell/layouts, error/not-found,
+login/signup (adds real labels — a11y fix, not behavior change), onboarding,
+dashboard, repositories, site workspace, chat, landing page **last**.
 
----
+**DB / env:** none. **Dependencies:** none (dialog/menu a11y contract per
+ruling 3 — if unmeetable, STOP and present failure + dependency recommendation).
 
-## M3 — Protected dashboard shell
+**Hard constraints (rulings):** no functional/ownership/security/state changes;
+no information loss; no premature Simple-Mode behavior (`ui_mode` is M8 — all
+users see the restyled full surfaces until then); no new backend touchpoints
+(reply chips, rejection reasons, repo classification all deferred to their
+milestones); Simple-Mode repo grouping softened per ruling C (no listing-time
+detection); landing page keeps waitlist/auth/routing/SEO behavior
+regression-locked; light theme only; copy updated to the §3.2 canon with test
+assertions updated in lockstep, never weakened.
 
-**Objective:** A `(app)` route group that only authenticated users can reach, with nav and an empty dashboard.
-
-**Files:** `proxy.ts` (optimistic redirect to `/login` for `(app)` paths), `app/(app)/layout.tsx` (calls `requireUser()` — the real check), `app/(app)/dashboard/page.tsx`, shared UI components (`components/`).
-**DB changes:** none.
-**Env vars:** none new.
-**Security:** defense in depth — proxy redirect is UX only; every `(app)` server component/route handler independently enforces auth via the DAL. Verify no user data is fetched before the auth check.
-**Tests / acceptance:**
-- Anonymous request to `/dashboard` → redirected to `/login` (and direct route-handler access returns 401, even with proxy bypassed).
-- Authenticated user sees dashboard with their email; landing page still public.
-
----
-
-## M4 — Onboarding flow
-
-**Objective:** First-login experience that walks the user toward connecting GitHub; dashboard empty-states.
-
-**Files:** `app/(app)/onboarding/page.tsx` (+ step components), redirect logic (users with no sites → onboarding).
-**DB changes:** `users` gain `onboarding_completed_at` (or derive from having ≥1 site — prefer deriving; decide here).
-**Env vars:** none new.
-**Security:** nothing new; same auth enforcement.
-**Tests / acceptance:** new user lands on onboarding after signup; user with a connected site goes straight to dashboard.
+**Tests/acceptance:** all 238 behavioral tests pass (copy assertions updated
+alongside intentional copy changes, reviewed one-by-one); new primitive tests
+incl. the full dialog/menu keyboard contract; manual a11y audit (§1.10) and
+responsive matrix (360/768/1024/1440) recorded; Anti-AI-Template Checklist
+table recorded per surface; env-less build green; owner production acceptance.
 
 ---
 
-## M5 — GitHub App integration
+## M8 — AI Service Layer + Mode Foundation
 
-**Objective:** Users install the DoFast GitHub App; we store installations and can mint installation tokens server-side. Webhooks keep installation state in sync.
+**Objective:** real AI chat replaces the placeholder responder; dual-mode
+foundation lands.
 
-**Files:** `lib/github/app.ts` (Octokit App client, token minting), `app/api/github/setup/route.ts` (post-install callback: verifies `installation_id` belongs to the signed-in user via the GitHub API before saving), `app/api/webhooks/github/route.ts` (signature-verified; handles `installation`, `installation_repositories` created/deleted/revoked), onboarding step UI linking to the App's install URL.
-**DB changes:** `github_installations` table.
-**Env vars:** `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_APP_WEBHOOK_SECRET`, `GITHUB_APP_SLUG` (for the install URL).
-**Security:**
-- Webhook: constant-time `X-Hub-Signature-256` verification before parsing; reject unsigned.
-- Installation claim: never trust `installation_id` from the query string alone — confirm via API that the installing account matches, or list installations for authenticated app and match.
-- Private key stored as env var (base64), never in repo; app requests minimum permissions (contents rw, metadata r, pull_requests rw).
-- Handle uninstall webhook → mark installation revoked, disable dependent sites.
-**Tests / acceptance:**
-- Webhook handler unit tests: valid signature accepted, tampered payload rejected.
-- Install flow (manual acceptance with a test GitHub account): install → row created; uninstall → row revoked and sites disabled.
-- Token minting returns a working installation token (integration test, mocked in CI).
+**Files:** `lib/ai/` (provider interface, Anthropic via AI SDK, **mock provider
+for CI**, context assembly from M6 snapshots within a token budget, versioned
+prompts conforming to the copy voice), streaming chat UI (composer/thread per
+DESIGN_SYSTEM), quick-action chips (Simple), clarification reply chips (the
+backend touchpoint deferred from M7.5 ruling D), mode switcher in account menu,
+mode-gating of Simple-hidden surfaces (redirect-to-workspace, never 404),
+Simple-Mode repo-listing presentation revisited (ruling C).
+**DB (0007):** `user.ui_mode` NOT NULL DEFAULT `'simple'` (additionalField,
+input:false — set via onboarding question + switcher server actions only);
+`usage_counters`; `chat_messages.token_usage` populated.
+**Env:** `ANTHROPIC_API_KEY`, `AI_MODEL` (default `claude-sonnet-5`) — names in
+`.env.example`, values configured by owner in `.env.local` + Vercel.
+**Security:** key server-only; repo content and messages wrapped as untrusted
+data; per-user caps enforced **before** provider calls; provider errors mapped
+to safe copy; model has no tools this milestone (answers only).
+**Tests/acceptance:** provider mocked in CI (no live AI); mode gating matrix
+(Simple never renders hidden vocabulary — checklist item 15); streaming +
+persistence; token accounting rows; caps produce the canonical quota copy;
+existing suites green.
 
----
+## M9 — Structured Change Proposals (plan stage)
 
-## M6 — Repository selection
+**Objective:** the AI can emit one validated `propose_changes` tool call;
+proposals become reviewable Drafts. **No GitHub writes.**
 
-**Objective:** User picks one repo from their installation as their "site"; we detect whether it's a supported Next.js/React project.
+**Files:** `lib/ai/tools/proposeChanges` (Zod schema), `lib/changes/`
+(validation + path allowlists — base list forbids `.github/workflows`, `.env*`,
+lockfiles, traversal; **Simple Mode stricter content-level list**, server-side
+from `ui_mode`), diff computation vs `base_commit_sha`, dual renderings
+generated and stored at plan time, proposal card (both modes), refusal UX,
+optional rejection-reason capture (deferred touchpoint from ruling D).
+**DB (0008):** `change_proposals` per ARCHITECTURE §4 with state-machine CHECKs.
+**Security:** proposals are inert data; malicious-proposal fixtures (workflow
+edit, traversal, oversize) rejected pre-review; stale-base detection.
+**Tests/acceptance:** validation matrix incl. both allowlist tiers; dual
+renderings always present; state transitions; diff fixtures; checklist.
 
-**Files:** `app/(app)/onboarding/select-repo/` UI, `lib/github/repos.ts` (list installation repos, read `package.json` + config files for framework detection), `lib/db/sites.ts`, `app/(app)/sites/[siteId]/page.tsx` stub.
-**DB changes:** `sites` table.
-**Env vars:** none new.
-**Security:** only repos from the user's *own* installations are listable/selectable (ownership check in DAL); framework detection reads files via the API — treat contents as untrusted data (parse `package.json` defensively).
-**Tests / acceptance:**
-- User sees exactly the repos granted to the App; selecting one creates a `sites` row with detected framework + default branch.
-- Unsupported repo (no Next.js/React deps) → clear "not supported yet" message, no site created.
+## M10 — Approval Gate 1 + Branch Writes
 
----
+**Objective:** approving a Draft creates `dofast/<id>` and commits it — the
+first GitHub write.
 
-## M7 — Read-only repository inspection
+**Files:** permission-upgrade flow (App permissions raised to Contents:
+read/write + Pull requests: read/write; UI prompts installations whose stored
+`permissions` lag, using M4's `new_permissions_accepted` plumbing),
+`lib/github/write.ts` (blobs/trees/commits/refs; **lowest-level guard: only
+`dofast/*` refs writable**), approve/reject actions with audit.
+**DB:** proposal transitions. **Env:** none.
+**Security:** server re-validates stored proposal content (never client-supplied);
+default-branch ref names rejected at the write layer (unit-tested); idempotent
+approval; cross-user attempts 403.
+**Acceptance:** owner performs the GitHub re-approval on the test installation;
+branch contents exactly match the stored proposal.
 
-**Objective:** Build the repo context the AI will need: a cached file index and on-demand file reads, strictly read-only.
+## M11 — Preview Deployments
 
-**Files:** `lib/github/inspect.ts` (tree listing via Git Data API, file reads with size caps), `lib/repo/snapshot.ts` (build/refresh `repo_snapshots`: paths, sizes, inferred roles like "page", "component", "config"), site page showing basic repo info.
-**DB changes:** `repo_snapshots` table (jsonb file index keyed by commit SHA).
-**Env vars:** none new.
-**Security:** enforce read-only in this module (no write scopes exercised); cap file count/size to bound memory; skip binaries and files >200KB; **never read `.env*` or secret-looking files into AI context** (denylist).
-**Tests / acceptance:**
-- Snapshot of a fixture repo produces expected index; re-snapshot on new commit updates SHA.
-- Denylisted paths absent from every snapshot; oversized files skipped with a marker.
+**Objective:** every approved proposal gets a preview URL from the user's own
+Vercel↔GitHub integration.
 
----
+**Files:** App webhook subscription extended (`push`, `deployment_status`);
+preview capture matched by repo+SHA; push-webhook snapshot invalidation
+(retires M6's TTL-only staleness); preview frame per DESIGN_SYSTEM — labeled
+"Preview — not your live site", **link-out fallback preserved; no unsafe iframe
+workarounds** (ruling B); no-Vercel-integration honest path.
+**DB:** `preview_url`/`preview_state` on proposals. **Env:** none.
+**Tests/acceptance:** simulated webhooks drive state; unknown repos/SHAs
+dropped; preview failure keeps the proposal reviewable and production untouched.
 
-## M8 — Chat interface
+## M12 — Publish + Verification (Gate 2)
 
-**Objective:** Per-site chat UI with persisted threads/messages. No AI yet (echo/canned responder) so UI and persistence are testable in isolation.
+**Objective:** "Make it live" merges to the default branch; publish is done
+only when verified.
 
-**Files:** `app/(app)/sites/[siteId]/chat/` (thread list, message stream UI), `app/api/sites/[siteId]/chat/route.ts` (POST message, streams response), `lib/db/chat.ts`.
-**DB changes:** `chat_threads`, `chat_messages`.
-**Env vars:** none new.
-**Security:** thread/message access scoped to site owner; message length limits; sanitize rendered content (messages render as text/markdown, never `dangerouslySetInnerHTML` of raw model output).
-**Tests / acceptance:** send message → persisted → response streams into UI → survives reload; user B cannot read/post to user A's thread (403 test).
+**Files:** publish/discard actions (the **only** default-branch write path;
+requires preview_ready + fresh confirmation; idempotent via transactional state
+transition), Advanced merge-vs-PR strategy (protected-branch fallback),
+verification stage (poll production deployment for the merged SHA + site
+response check; success/failure states per UX_FLOWS 4.28), branch cleanup.
+**DB:** `published_commit_sha`, `verification_status`, `verified_at`.
+**Security:** merge conflicts fail cleanly (never force-push); double-publish
+single-merge test; verification failure prominently offers undo.
 
----
+## M13 — History & Rollback
 
-## M9 — AI service layer (provider-agnostic)
+**Objective:** complete, honest history and one-click undo.
 
-**Objective:** Replace the canned responder with real AI behind an `AIProvider` interface, with streaming, token accounting, and repo context injection. Chat can *answer questions* about the site; it cannot propose changes yet.
+**Files:** history page (all outcomes: published/verified, rejected, failed,
+superseded, undone), history drawer (Advanced adds SHAs/branch/diff/verification
+log), undo on newest published change → mechanical revert proposal through the
+**same** preview→approve→publish pipeline (fast-tracked UI, zero new write
+paths), rollback-failure recovery per UX_FLOWS 4.32.
+**DB:** `revert_commit_sha`, `revert_of_proposal_id` usage.
+**Tests/acceptance:** revert correctness on fixtures; undo honors both gates;
+history completeness; Simple/Advanced renderings.
 
-**Files:** `lib/ai/provider.ts` (interface + types), `lib/ai/anthropic.ts` (Claude via AI SDK), `lib/ai/context.ts` (assemble system prompt + repo snapshot + selected file contents within a token budget), `lib/ai/prompts/`.
-**DB changes:** `chat_messages.token_usage` jsonb; `usage_counters` table (start counting now).
-**Env vars:** `ANTHROPIC_API_KEY`, `AI_MODEL` (default `claude-sonnet-5`), optional `AI_PROVIDER`.
-**Security:** API key server-only; repo content wrapped as untrusted data in prompts; per-user request caps enforced *before* calling the provider; provider errors mapped to safe user-facing messages (no key/stack leakage).
-**Tests / acceptance:**
-- Provider interface has a mock implementation used in all CI tests (no live API in CI).
-- Swapping provider = config change only (demonstrated by the mock).
-- Token usage recorded per message; over-limit user gets a clear refusal.
+## M14 — Hardening & Operability
 
----
+**Objective:** abuse-resistant, observable, launch-ready.
 
-## M10 — Structured code changes
+**Files/scope:** durable rate limiting (per-user + per-IP; store choice needs
+approval if it adds a dependency), quota enforcement with canonical copy,
+structured-logging sweep (request-id correlation), client-bundle secret scan in
+CI, security-header/CSP pass, full-lifecycle E2E (Playwright — dependency
+approval required), automated axe accessibility checks (dependency approval
+required), Playwright visual-regression baseline, load-reasonable indexes.
+**Env:** rate-limit/quota configuration.
+**Acceptance:** E2E signup→connect→ask→plan→preview→publish→verify→undo on a
+fixture repo; limit UX matches canon; no secret material in any log or bundle.
 
-**Objective:** The AI can emit a validated `propose_changes` tool call; proposals are stored with a computed diff. Nothing is written to GitHub yet.
+## Order & dependencies
 
-**Files:** `lib/ai/tools/proposeChanges.ts` (tool schema), `lib/changes/validate.ts` (Zod + path allow-list + size/count caps), `lib/changes/diff.ts` (unified diff vs `base_commit_sha` content), `lib/changes/proposals.ts` (create/read, state machine), chat route wiring.
-**DB changes:** `change_proposals` table.
-**Env vars:** none new.
-**Security:** the critical boundary —
-- reject proposals touching `.github/workflows/`, `.env*`, `package-lock.json`/lockfiles, dotfiles outside an allow-list, or any path with `..`/absolute components;
-- cap: ≤10 files, ≤100KB per file per proposal (tunable);
-- proposals are inert data until a human acts; AI output never executed or eval'd.
-**Tests / acceptance:**
-- Malicious proposal fixtures (workflow edit, path traversal, giant file) all rejected with recorded reasons.
-- Valid proposal produces a correct unified diff (fixture-tested) and status `proposed`.
-
----
-
-## M11 — Diff review & approve/reject workflow
-
-**Objective:** User sees a readable per-file diff in the chat/site UI and approves or rejects. Approval creates the git branch + commit (first write to GitHub).
-
-**Files:** diff viewer components, `app/api/proposals/[id]/approve/route.ts`, `.../reject/route.ts`, `lib/github/write.ts` (create ref `dofast/<id>` from base SHA; create blobs/tree/commit via Git Data API), state-machine transitions in `lib/changes/`.
-**DB changes:** proposal status/timestamps columns exercised; `audit_log` entries for approve/reject.
-**Env vars:** none new.
-**Security:**
-- Only the site owner can approve; approval endpoint re-validates the proposal server-side (never trusts client-supplied file content — applies what's stored).
-- Writes allowed **only** to `dofast/*` refs in this module; default-branch ref names rejected at the lowest level (`lib/github/write.ts` guard).
-- Stale-base check: if default branch moved past `base_commit_sha`, warn and require regeneration (MVP: no rebase).
-**Tests / acceptance:**
-- Approve on fixture site → branch exists with exactly the proposed contents; status `branch_created`; audit row written.
-- Reject → status `rejected`, no GitHub write.
-- Attempted write to `main` via the write module throws (unit test).
-- Cross-user approval attempt → 403.
-
----
-
-## M12 — Preview deployments
-
-**Objective:** Surface the Vercel preview URL for the proposal branch and let the user review it.
-
-**Files:** extend `app/api/webhooks/github/route.ts` for `deployment_status` events; `lib/github/previews.ts` (fallback: poll commit statuses/checks for the branch head); proposal UI shows preview link + "waiting for preview" state; site settings flag for "no Vercel integration detected".
-**DB changes:** `change_proposals.preview_url`, `preview_state`.
-**Env vars:** none new (previews come from the *user's* Vercel↔GitHub integration; no Vercel token needed for MVP).
-**Security:** preview URLs displayed as external links (`rel="noopener"`); webhook events matched to proposals by repo + SHA, ignoring events for unknown repos; note in UI that preview deployments run the user's own code on the user's own Vercel account (their trust domain, not ours).
-**Tests / acceptance:**
-- Simulated `deployment_status` webhook → proposal gains preview URL, status `preview_ready`.
-- Repo without Vercel integration → honest "no preview available; review the diff" path (user can still publish; decide whether to gate publish on preview — default: allow with extra confirmation).
-
----
-
-## M13 — Publishing approved changes
-
-**Objective:** One-click publish merges the `dofast/*` branch into the default branch; branch cleanup; full audit trail. Completes the end-to-end MVP loop.
-
-**Files:** `app/api/proposals/[id]/publish/route.ts`, `.../discard/route.ts`, `lib/github/publish.ts` (merge via GitHub merge API; detect branch-protection failures and fall back to opening a PR the user merges), changes-history page `app/(app)/sites/[siteId]/changes/`.
-**DB changes:** `published_at`, `published_commit_sha`; audit entries.
-**Env vars:** none new.
-**Security:** the **only** code path that writes to a default branch; requires status `preview_ready` (or the M12 no-preview override) + fresh confirmation; idempotent (double-click publishes once — guard with a status transition inside a transaction); merge conflicts → status `failed` with a human-readable explanation, never a force push.
-**Tests / acceptance:**
-- Publish on fixture repo → default branch contains the change, branch deleted, status `published`, audit row complete (who/what/when/SHA).
-- Concurrent double-publish → single merge.
-- Conflicting base → clean failure, repo untouched.
-
----
-
-## M14 — Security hardening, usage limits, logging, error handling
-
-**Objective:** Make the MVP operable and abuse-resistant before real users.
-
-**Files:** rate limiting on all mutating endpoints (per-user + per-IP; Upstash Ratelimit or Postgres-based), `lib/usage/limits.ts` (daily chat/publish caps read from env/config), structured logger `lib/log.ts` (request-id correlation), global `error.tsx`/route-handler error mapping, security headers + CSP in `next.config.ts`, dependency audit in CI.
-**DB changes:** `usage_counters` finalized; indexes for hot queries.
-**Env vars:** `RATE_LIMIT_*`, `USAGE_DAILY_CHAT_LIMIT`, `USAGE_DAILY_PUBLISH_LIMIT`, optionally `UPSTASH_REDIS_REST_URL/TOKEN`.
-**Security (checklist to verify end-to-end):**
-- No secret reaches the client bundle (`grep` build output for key prefixes in CI).
-- All webhooks signature-verified; all mutating routes auth + ownership + rate-limit checked.
-- AI can only ever produce inert proposals; only publish handler touches default branches.
-- Audit log covers: signup, install, site connect, proposal created/approved/rejected, branch created, published, discarded, limit-hit.
-**Tests / acceptance:** rate-limit integration tests (429s); limit-exceeded UX is clear; error pages never leak stack traces; a full happy-path E2E (Playwright) run: signup → connect → chat → propose → approve → preview → publish, against fixture/test repo.
-
----
-
-## Milestone order & dependencies
-
-```
-M0 → M1 → M2 → M3 → M4
-             M5 → M6 → M7 ──┐
-                  M8 ───────┼→ M9 → M10 → M11 → M12 → M13 → M14
-```
-
-M8 (chat UI with canned responses) can proceed in parallel with M5–M7. Everything else is sequential. M14 items that are cheap (rate limiting a new endpoint) should be done *within* earlier milestones; M14 is the sweep that verifies nothing was missed.
-
-## Standing rules for every milestone
-
-1. Landing page behavior and appearance never regress (snapshot test from M0 guards this).
-2. No milestone merges without tests for its acceptance criteria and green CI.
-3. New env vars land in `.env.example` in the same PR.
-4. Consult `node_modules/next/dist/docs/` before using any Next.js API.
-5. AI-generated changes (our own dogfooding included) never target the production branch directly.
+Strictly sequential: M7.6 → M8 → M9 → M10 → M11 → M12 → M13 → M14. Each ends
+with owner production acceptance. Cheap hardening (rate limits on new
+endpoints, audit rows) lands inside each milestone; M14 is the sweep that
+verifies nothing was missed.
