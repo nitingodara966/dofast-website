@@ -1,5 +1,5 @@
 import "server-only";
-import { eq, sql } from "drizzle-orm";
+import { eq, lte } from "drizzle-orm";
 import { getDb } from "./index";
 import { repoSnapshots } from "./schema";
 import type { IndexedFile } from "../repo/filters";
@@ -74,7 +74,10 @@ export async function upsertSnapshotSuccess(
         headCheckedAt: now,
         updatedAt: now,
       },
-      setWhere: sql`${repoSnapshots.indexedAt} <= ${input.indexedAt}`,
+      // lte (not raw sql``) so the column's driver encoding applies to the
+      // Date param — raw template params bypass it and crash postgres.js
+      // serialization (production ERR_INVALID_ARG_TYPE, first snapshot build).
+      setWhere: lte(repoSnapshots.indexedAt, input.indexedAt),
     });
 }
 

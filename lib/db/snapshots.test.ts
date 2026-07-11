@@ -33,8 +33,20 @@ vi.mock("./index", () => ({
           if (!/"indexed_at" <= \$/.test(rendered.sql)) {
             throw new Error(`unexpected setWhere: ${rendered.sql}`);
           }
-          const param = rendered.params[0] as Date;
-          if ((row.indexedAt as Date).getTime() <= param.getTime()) {
+          // Production regression (ERR_INVALID_ARG_TYPE): postgres.js requires
+          // driver-serializable params — a raw Date instance here crashed the
+          // first authenticated snapshot build. The param must arrive already
+          // column-encoded as a string.
+          const param = rendered.params[0];
+          if (param instanceof Date) {
+            throw new Error(
+              "setWhere param is a raw Date — driver serialization boundary violated"
+            );
+          }
+          if (typeof param !== "string") {
+            throw new Error(`setWhere param must be a string, got ${typeof param}`);
+          }
+          if ((row.indexedAt as Date).getTime() <= new Date(param).getTime()) {
             row = { ...row, ...config.set };
           }
         },
@@ -90,11 +102,16 @@ beforeEach(() => {
 });
 
 describe("upsertSnapshotSuccess ordering guard", () => {
-  it("renders the guard as indexed_at <= $buildStart with the build's own timestamp", async () => {
+  it("renders the guard as indexed_at <= $buildStart with a driver-safe string param", async () => {
     await upsertSnapshotSuccess(successInput("B".repeat(40), t2)); // insert
     await upsertSnapshotSuccess(successInput("C".repeat(40), t3)); // conflict path
     expect(lastRenderedSetWhere?.sql).toMatch(/"repo_snapshots"\."indexed_at" <= \$/);
-    expect(lastRenderedSetWhere?.params[0]).toEqual(t3);
+    const param = lastRenderedSetWhere?.params[0];
+    // Exact production failure mode: a Date instance at this boundary crashes
+    // postgres.js serialization (ERR_INVALID_ARG_TYPE). Must be an encoded string.
+    expect(param).not.toBeInstanceOf(Date);
+    expect(typeof param).toBe("string");
+    expect(new Date(param as string).getTime()).toBe(t3.getTime());
   });
 
   it("stale build A (older start) cannot overwrite newer successful build B", async () => {
